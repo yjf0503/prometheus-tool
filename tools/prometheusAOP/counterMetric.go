@@ -14,7 +14,7 @@ type CounterMetric struct {
 	counterVec  *prometheus.CounterVec
 }
 
-func (c *CounterMetric) setAttributes(name string, help string, labelName []string) {
+func (c *CounterMetric) setAttributes(name, help string, labelName []string) {
 	c.name = name
 	c.help = help
 	c.labelName = labelName
@@ -24,7 +24,7 @@ func (c *CounterMetric) setAttributes(name string, help string, labelName []stri
 	}
 }
 
-func (c *CounterMetric) CheckAndRegisterCollector(name string, help string, labelName []string) *CounterMetric {
+func (c *CounterMetric) CheckAndRegisterCollector(name, help string, labelName []string) *CounterMetric {
 	counterMetric := counterMetricNames[name]
 	if counterMetric == nil {
 		counterMetric = &CounterMetric{}

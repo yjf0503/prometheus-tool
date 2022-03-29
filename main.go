@@ -30,7 +30,7 @@ func main() {
 		name := "request_counter_total"
 		help := "test request counter"
 		labelName := []string{"path", "memo"}
-		testCounterMetric(name, help, labelName)
+		testHistogramMetric(name, help, requestTimeBucket, labelName)
 	}()
 
 	go func() {
@@ -38,41 +38,42 @@ func main() {
 		name := "request_counter_total"
 		help := "test request counter"
 		labelName := []string{"path", "memo"}
-		testCounterMetric(name, help, labelName)
+		testHistogramMetric(name, help, requestTimeBucket, labelName)
 	}()
 
 	select {}
 }
 
 var requestApi = [10]string{
-	"add_outside_oplog",
-	"batch_update_entity",
-	"delete_events",
-	"add_outside_oplog",
-	"batch_update_entity",
-	"delete_events",
-	"add_outside_oplog",
-	"batch_update_entity",
-	"delete_events",
-	"add_outside_oplog"}
+	"add_outside_oplog_async",
+	"batch_update_entity_cluster",
+	"delete_events_data",
+	"add_outside_oplog_async",
+	"batch_update_entity_cluster",
+	"delete_events_data",
+	"add_outside_oplog_async",
+	"batch_update_entity_cluster",
+	"delete_events_data",
+	"add_outside_oplog_async"}
 
 var requestTime = []float64{100, 200, 300, 400, 500, 600, 700, 800, 900, 1000}
 var requestTimeBucket = []float64{50, 100, 250, 500, 1000, 2500, 5000, 10000}
 var requestTimeObjective = map[float64]float64{0.5: 0.05, 0.8: 0.001, 0.9: 0.01, 0.95: 0.01}
 
-func testHistogramMetric() {
-	histogramMetric := prometheusAOP.HistogramMetric{}
-	histogramMetric.Before("request_time_histogram", "the relationship between api and request time", requestTimeBucket, []string{"path"})
-
+func testHistogramMetric(name, help string, buckets []float64, labelName []string) {
+	histogramMetric := &prometheusAOP.HistogramMetric{}
+	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
+	histogramMetric = histogramMetric.CheckAndRegisterCollector(name, help, buckets, labelName)
 	for i := 0; i < len(requestTime); i++ {
-		//收集histogram指标
-		err := histogramMetric.DoObserve([]string{requestApi[i]}, requestTime[i])
+		//收集counter指标
+		err := histogramMetric.DoObserve([]string{requestApi[i], "test"}, requestTime[i])
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
 
-		fmt.Printf("requestApi - requestTime: %s - %f \n", requestApi[i], requestTime[i])
+		fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().Unix())
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 }
 

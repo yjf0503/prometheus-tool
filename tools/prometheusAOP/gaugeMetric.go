@@ -14,7 +14,7 @@ type GaugeMetric struct {
 	gaugeVec   *prometheus.GaugeVec
 }
 
-func (g *GaugeMetric) setAttributes(name string, help string, labelName []string) {
+func (g *GaugeMetric) setAttributes(name, help string, labelName []string) {
 	g.name = name
 	g.help = help
 	g.labelName = labelName
@@ -24,7 +24,7 @@ func (g *GaugeMetric) setAttributes(name string, help string, labelName []string
 	}
 }
 
-func (g *GaugeMetric) CheckAndRegisterCollector(name string, help string, labelName []string) *GaugeMetric {
+func (g *GaugeMetric) CheckAndRegisterCollector(name, help string, labelName []string) *GaugeMetric {
 	gaugeMetric := gaugeMetricNames[name]
 	if gaugeMetric == nil {
 		gaugeMetric = &GaugeMetric{}

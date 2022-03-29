@@ -1,27 +1,49 @@
 package prometheusAOP
 
 import (
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type HistogramMetric struct {
-	name         string
-	help         string
-	buckets      []float64
-	labelName    []string
-	labelValue   []string
-	HistogramVec *prometheus.HistogramVec
-	observer     prometheus.Observer
-	timer        *prometheus.Timer
+	name          string
+	help          string
+	buckets       []float64
+	labelName     []string
+	labelValue    []string
+	histogramOpts prometheus.HistogramOpts
+	histogramVec  *prometheus.HistogramVec
+	timer         *prometheus.Timer
 }
 
-func (h *HistogramMetric) buildMetric() {
-	histogramOpts := prometheus.HistogramOpts{
+func (h *HistogramMetric) setAttributes(name, help string, buckets []float64, labelName []string) {
+	h.name = name
+	h.help = help
+	h.buckets = buckets
+	h.labelName = labelName
+	h.histogramOpts = prometheus.HistogramOpts{
 		Name:    h.name,
 		Help:    h.help,
 		Buckets: h.buckets,
 	}
-	h.HistogramVec = prometheus.NewHistogramVec(histogramOpts, h.labelName)
+}
+
+func (h *HistogramMetric) CheckAndRegisterCollector(name, help string, buckets []float64, labelName []string) *HistogramMetric {
+	histogramMetric := histogramMetricNames[name]
+	if histogramMetric == nil {
+		histogramMetric = &HistogramMetric{}
+		histogramMetric.setAttributes(name, help, buckets, labelName)
+		histogramMetric.histogramVec = prometheus.NewHistogramVec(histogramMetric.histogramOpts, histogramMetric.labelName)
+		err := Registry.Register(histogramMetric.histogramVec)
+		if err != nil {
+			fmt.Print(err.Error())
+		}
+		histogramMetricNames[name] = histogramMetric
+	} else {
+		histogramMetric.setAttributes(name, help, buckets, labelName)
+	}
+
+	return histogramMetric
 }
 
 func (h *HistogramMetric) DoObserve(labelValue []string, metricValue float64) error {
@@ -32,18 +54,7 @@ func (h *HistogramMetric) DoObserve(labelValue []string, metricValue float64) er
 	}
 
 	labels := generateLabels(h.labelName, h.labelValue)
-	h.observer = h.HistogramVec.With(labels)
-	h.observer.Observe(metricValue)
+	h.histogramVec.With(labels).Observe(metricValue)
 
 	return nil
-}
-
-func (h *HistogramMetric) Before(name string, help string, buckets []float64, labelName []string) {
-	h.name = name
-	h.help = help
-	h.buckets = buckets
-	h.labelName = labelName
-	h.buildMetric()
-
-	_ = Registry.Register(h.HistogramVec)
 }

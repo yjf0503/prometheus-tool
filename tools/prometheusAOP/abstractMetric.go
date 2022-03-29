@@ -8,13 +8,13 @@ import (
 // Registry 创建一个自定义的注册表
 var Registry = prometheus.NewRegistry()
 
-var histogramMetricNames map[string]bool
+var histogramMetricNames map[string]*HistogramMetric
 var summaryMetricNames map[string]bool
 var counterMetricNames map[string]*CounterMetric
 var gaugeMetricNames map[string]*GaugeMetric
 
 func init() {
-	histogramMetricNames = make(map[string]bool, 0)
+	histogramMetricNames = make(map[string]*HistogramMetric, 0)
 	summaryMetricNames = make(map[string]bool, 0)
 	counterMetricNames = make(map[string]*CounterMetric, 0)
 	gaugeMetricNames = make(map[string]*GaugeMetric, 0)
