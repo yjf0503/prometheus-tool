@@ -24,11 +24,11 @@ func (g *GaugeMetric) setAttributes(name string, help string, labelName []string
 	}
 }
 
-func (g *GaugeMetric) CheckAndRegisterCollector(name string, help string, labelName string) *GaugeMetric {
+func (g *GaugeMetric) CheckAndRegisterCollector(name string, help string, labelName []string) *GaugeMetric {
 	gaugeMetric := gaugeMetricNames[name]
 	if gaugeMetric == nil {
 		gaugeMetric = &GaugeMetric{}
-		gaugeMetric.setAttributes(name, help, []string{labelName})
+		gaugeMetric.setAttributes(name, help, labelName)
 		gaugeMetric.gaugeVec = prometheus.NewGaugeVec(gaugeMetric.gaugeOpts, gaugeMetric.labelName)
 		err := Registry.Register(gaugeMetric.gaugeVec)
 		if err != nil {
@@ -36,7 +36,7 @@ func (g *GaugeMetric) CheckAndRegisterCollector(name string, help string, labelN
 		}
 		gaugeMetricNames[name] = gaugeMetric
 	} else {
-		gaugeMetric.setAttributes(name, help, []string{labelName})
+		gaugeMetric.setAttributes(name, help, labelName)
 	}
 
 	return gaugeMetric

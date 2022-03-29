@@ -24,11 +24,11 @@ func (c *CounterMetric) setAttributes(name string, help string, labelName []stri
 	}
 }
 
-func (c *CounterMetric) CheckAndRegisterCollector(name string, help string, labelName string) *CounterMetric {
+func (c *CounterMetric) CheckAndRegisterCollector(name string, help string, labelName []string) *CounterMetric {
 	counterMetric := counterMetricNames[name]
 	if counterMetric == nil {
 		counterMetric = &CounterMetric{}
-		counterMetric.setAttributes(name, help, []string{labelName})
+		counterMetric.setAttributes(name, help, labelName)
 		counterMetric.counterVec = prometheus.NewCounterVec(counterMetric.counterOpts, counterMetric.labelName)
 		err := Registry.Register(counterMetric.counterVec)
 		if err != nil {
@@ -36,7 +36,7 @@ func (c *CounterMetric) CheckAndRegisterCollector(name string, help string, labe
 		}
 		counterMetricNames[name] = counterMetric
 	} else {
-		counterMetric.setAttributes(name, help, []string{labelName})
+		counterMetric.setAttributes(name, help, labelName)
 	}
 
 	return counterMetric
