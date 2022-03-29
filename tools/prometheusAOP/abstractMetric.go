@@ -3,6 +3,7 @@ package prometheusAOP
 import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
+	"strings"
 )
 
 // Registry 创建一个自定义的注册表
@@ -18,6 +19,17 @@ func init() {
 	summaryMetricNameMap = make(map[string]*SummaryMetric, 0)
 	counterMetricNameMap = make(map[string]*CounterMetric, 0)
 	gaugeMetricNameMap = make(map[string]*GaugeMetric, 0)
+}
+
+func checkLabelNames(name string, originalLabelName, inputLabelValue []string) error {
+	originalLabelNameString := strings.Join(originalLabelName, ",")
+	inputLabelNameString := strings.Join(inputLabelValue, ",")
+
+	if originalLabelNameString != inputLabelNameString {
+		return fmt.Errorf("labelNames are not same, original labelName of metric {%s} is [%s], while input labelName is [%s] \n", name, originalLabelNameString, inputLabelNameString)
+	}
+
+	return nil
 }
 
 func checkLabelNameAndValue(labelName, labelValue []string) error {

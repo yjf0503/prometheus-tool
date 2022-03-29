@@ -1,7 +1,6 @@
 package prometheusAOP
 
 import (
-	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -24,29 +23,33 @@ func (c *CounterMetric) setAttributes(name, help string, labelName []string) {
 	}
 }
 
-func (c *CounterMetric) CheckAndRegisterCollector(name, help string, labelName []string) *CounterMetric {
+func (c *CounterMetric) CheckAndRegisterCollector(name, help string, labelName []string) (*CounterMetric, error) {
 	counterMetric := counterMetricNameMap[name]
 	if counterMetric == nil {
 		counterMetric = &CounterMetric{}
 		counterMetric.setAttributes(name, help, labelName)
 		counterMetric.counterVec = prometheus.NewCounterVec(counterMetric.counterOpts, counterMetric.labelName)
-		err := Registry.Register(counterMetric.counterVec)
-		if err != nil {
-			fmt.Print(err.Error())
+		registerErr := Registry.Register(counterMetric.counterVec)
+		if registerErr != nil {
+			return nil, registerErr
 		}
 	} else {
+		checkLabelNamesErr := checkLabelNames(counterMetric.name, counterMetric.labelName, labelName)
+		if checkLabelNamesErr != nil {
+			return nil, checkLabelNamesErr
+		}
 		counterMetric.setAttributes(name, help, labelName)
 	}
 	counterMetricNameMap[name] = counterMetric
 
-	return counterMetric
+	return counterMetric, nil
 }
 
 func (c *CounterMetric) DoObserve(labelValue []string, metricValue float64) error {
 	c.labelValue = labelValue
-	checkLabelNameAndValueResult := checkLabelNameAndValue(c.labelName, c.labelValue)
-	if checkLabelNameAndValueResult != nil {
-		return checkLabelNameAndValueResult
+	checkLabelNameAndValueErr := checkLabelNameAndValue(c.labelName, c.labelValue)
+	if checkLabelNameAndValueErr != nil {
+		return checkLabelNameAndValueErr
 	}
 
 	if metricValue < 0 {

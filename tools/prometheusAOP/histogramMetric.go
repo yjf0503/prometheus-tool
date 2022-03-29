@@ -1,7 +1,6 @@
 package prometheusAOP
 
 import (
-	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -28,29 +27,33 @@ func (h *HistogramMetric) setAttributes(name, help string, buckets []float64, la
 	}
 }
 
-func (h *HistogramMetric) CheckAndRegisterCollector(name, help string, buckets []float64, labelName []string) *HistogramMetric {
+func (h *HistogramMetric) CheckAndRegisterCollector(name, help string, buckets []float64, labelName []string) (*HistogramMetric, error) {
 	histogramMetric := histogramMetricNameMap[name]
 	if histogramMetric == nil {
 		histogramMetric = &HistogramMetric{}
 		histogramMetric.setAttributes(name, help, buckets, labelName)
 		histogramMetric.histogramVec = prometheus.NewHistogramVec(histogramMetric.histogramOpts, histogramMetric.labelName)
-		err := Registry.Register(histogramMetric.histogramVec)
-		if err != nil {
-			fmt.Print(err.Error())
+		registerErr := Registry.Register(histogramMetric.histogramVec)
+		if registerErr != nil {
+			return nil, registerErr
 		}
 	} else {
+		checkLabelNamesErr := checkLabelNames(histogramMetric.name, histogramMetric.labelName, labelName)
+		if checkLabelNamesErr != nil {
+			return nil, checkLabelNamesErr
+		}
 		histogramMetric.setAttributes(name, help, buckets, labelName)
 	}
 	histogramMetricNameMap[name] = histogramMetric
 
-	return histogramMetric
+	return histogramMetric, nil
 }
 
 func (h *HistogramMetric) DoObserve(labelValue []string, metricValue float64) error {
 	h.labelValue = labelValue
-	checkLabelNameAndValueResult := checkLabelNameAndValue(h.labelName, h.labelValue)
-	if checkLabelNameAndValueResult != nil {
-		return checkLabelNameAndValueResult
+	checkLabelNameAndValueErr := checkLabelNameAndValue(h.labelName, h.labelValue)
+	if checkLabelNameAndValueErr != nil {
+		return checkLabelNameAndValueErr
 	}
 
 	labels := generateLabels(h.labelName, h.labelValue)

@@ -1,7 +1,6 @@
 package prometheusAOP
 
 import (
-	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -28,29 +27,33 @@ func (s *SummaryMetric) setAttributes(name, help string, objectives map[float64]
 	}
 }
 
-func (s *SummaryMetric) CheckAndRegisterCollector(name, help string, objectives map[float64]float64, labelName []string) *SummaryMetric {
+func (s *SummaryMetric) CheckAndRegisterCollector(name, help string, objectives map[float64]float64, labelName []string) (*SummaryMetric, error) {
 	summaryMetric := summaryMetricNameMap[name]
 	if summaryMetric == nil {
 		summaryMetric = &SummaryMetric{}
 		summaryMetric.setAttributes(name, help, objectives, labelName)
 		summaryMetric.summaryVec = prometheus.NewSummaryVec(summaryMetric.summaryOpts, summaryMetric.labelName)
-		err := Registry.Register(summaryMetric.summaryVec)
-		if err != nil {
-			fmt.Print(err.Error())
+		registerErr := Registry.Register(summaryMetric.summaryVec)
+		if registerErr != nil {
+			return nil, registerErr
 		}
 	} else {
+		checkLabelNamesErr := checkLabelNames(summaryMetric.name, summaryMetric.labelName, labelName)
+		if checkLabelNamesErr != nil {
+			return nil, checkLabelNamesErr
+		}
 		summaryMetric.setAttributes(name, help, objectives, labelName)
 	}
 	summaryMetricNameMap[name] = summaryMetric
 
-	return summaryMetric
+	return summaryMetric, nil
 }
 
 func (s *SummaryMetric) DoObserve(labelValue []string, metricValue float64) error {
 	s.labelValue = labelValue
-	checkLabelNameAndValueResult := checkLabelNameAndValue(s.labelName, s.labelValue)
-	if checkLabelNameAndValueResult != nil {
-		return checkLabelNameAndValueResult
+	checkLabelNameAndValueErr := checkLabelNameAndValue(s.labelName, s.labelValue)
+	if checkLabelNameAndValueErr != nil {
+		return checkLabelNameAndValueErr
 	}
 
 	labels := generateLabels(s.labelName, s.labelValue)
