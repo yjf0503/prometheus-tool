@@ -27,6 +27,14 @@ func checkLabelNameAndValue(labelName, labelValue []string) error {
 	return nil
 }
 
+func generateLabels(labelName, labelValue []string) map[string]string {
+	labels := map[string]string{}
+	for k, v := range labelName {
+		labels[v] = labelValue[k]
+	}
+	return labels
+}
+
 func UnregisterCollectors() {
 	for _, v := range counterMetricNames {
 		Registry.Unregister(v.counterVec)
@@ -35,14 +43,14 @@ func UnregisterCollectors() {
 	for _, v := range gaugeMetricNames {
 		Registry.Unregister(v.gaugeVec)
 	}
-}
 
-func generateLabels(labelName, labelValue []string) map[string]string {
-	labels := map[string]string{}
-	for k, v := range labelName {
-		labels[v] = labelValue[k]
+	for _, v := range histogramMetricNames {
+		Registry.Unregister(v.histogramVec)
 	}
-	return labels
+
+	for _, v := range summaryMetricNames {
+		Registry.Unregister(v.summaryVec)
+	}
 }
 
 type metricObject interface {
