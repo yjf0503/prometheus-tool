@@ -9,13 +9,13 @@ import (
 var Registry = prometheus.NewRegistry()
 
 var histogramMetricNames map[string]*HistogramMetric
-var summaryMetricNames map[string]bool
+var summaryMetricNames map[string]*SummaryMetric
 var counterMetricNames map[string]*CounterMetric
 var gaugeMetricNames map[string]*GaugeMetric
 
 func init() {
 	histogramMetricNames = make(map[string]*HistogramMetric, 0)
-	summaryMetricNames = make(map[string]bool, 0)
+	summaryMetricNames = make(map[string]*SummaryMetric, 0)
 	counterMetricNames = make(map[string]*CounterMetric, 0)
 	gaugeMetricNames = make(map[string]*GaugeMetric, 0)
 }

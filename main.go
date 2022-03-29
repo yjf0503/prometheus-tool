@@ -30,7 +30,7 @@ func main() {
 		name := "request_counter_total"
 		help := "test request counter"
 		labelName := []string{"path", "memo"}
-		testHistogramMetric(name, help, requestTimeBucket, labelName)
+		testSummaryMetric(name, help, requestTimeObjective, labelName)
 	}()
 
 	go func() {
@@ -38,7 +38,7 @@ func main() {
 		name := "request_counter_total"
 		help := "test request counter"
 		labelName := []string{"path", "memo"}
-		testHistogramMetric(name, help, requestTimeBucket, labelName)
+		testSummaryMetric(name, help, requestTimeObjective, labelName)
 	}()
 
 	select {}
@@ -65,7 +65,7 @@ func testHistogramMetric(name, help string, buckets []float64, labelName []strin
 	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
 	histogramMetric = histogramMetric.CheckAndRegisterCollector(name, help, buckets, labelName)
 	for i := 0; i < len(requestTime); i++ {
-		//收集counter指标
+		//收集histogram指标
 		err := histogramMetric.DoObserve([]string{requestApi[i], "test"}, requestTime[i])
 		if err != nil {
 			fmt.Println(err.Error())
@@ -77,19 +77,20 @@ func testHistogramMetric(name, help string, buckets []float64, labelName []strin
 	}
 }
 
-func testSummaryMetric() {
-	summaryMetric := prometheusAOP.SummaryMetric{}
-	summaryMetric.Before("request_time_summary", "the relationship between api and request time", requestTimeObjective, []string{"path"})
-
+func testSummaryMetric(name, help string, objectives map[float64]float64, labelName []string) {
+	summaryMetric := &prometheusAOP.SummaryMetric{}
+	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
+	summaryMetric = summaryMetric.CheckAndRegisterCollector(name, help, objectives, labelName)
 	for i := 0; i < len(requestTime); i++ {
 		//收集summary指标
-		err := summaryMetric.DoObserve([]string{requestApi[i]}, requestTime[i])
+		err := summaryMetric.DoObserve([]string{requestApi[i], "test"}, requestTime[i])
 		if err != nil {
 			fmt.Println(err.Error())
 			return
 		}
 
-		fmt.Printf("requestApi - requestTime: %s - %f \n", requestApi[i], requestTime[i])
+		fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().Unix())
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 }
 
