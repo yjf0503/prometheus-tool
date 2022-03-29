@@ -27,12 +27,12 @@ func main() {
 	//testGaugeMetric()
 
 	go func() {
-		TestCounterMetric()
+		testCounterMetric()
 	}()
 
 	go func() {
 		time.Sleep(time.Duration(1) * time.Second)
-		TestCounterMetric()
+		testCounterMetric()
 	}()
 
 	select {}
@@ -86,7 +86,7 @@ func testSummaryMetric() {
 	}
 }
 
-func TestCounterMetric() {
+func testCounterMetric() {
 	name := "request_counter_total"
 	help := "test request counter"
 	labelName := "path"
@@ -110,12 +110,16 @@ func TestCounterMetric() {
 }
 
 func testGaugeMetric() {
-	gaugeMetric := prometheusAOP.GaugeMetric{}
-	gaugeMetric.Before("request_gauge_total", "test request gauge", []string{"path"})
+	name := "request_counter_total"
+	help := "test request counter"
+	labelName := "path"
 
-	for {
+	gaugeMetric := &prometheusAOP.GaugeMetric{}
+	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
+	gaugeMetric = gaugeMetric.CheckAndRegisterCollector(name, help, labelName)
+	for i := 0; i < len(requestTime); i++ {
 		//收集gauge指标
-		api := requestApi[time.Now().Unix()%10]
+		api := requestApi[i]
 		err := gaugeMetric.DoObserve([]string{api}, 1)
 		if err != nil {
 			fmt.Println(err.Error())

@@ -10,14 +10,14 @@ var Registry = prometheus.NewRegistry()
 
 var histogramMetricNames map[string]bool
 var summaryMetricNames map[string]bool
-var CounterMetricNames map[string]*CounterMetric
-var gaugeMetricNames map[string]bool
+var counterMetricNames map[string]*CounterMetric
+var gaugeMetricNames map[string]*GaugeMetric
 
 func init() {
 	histogramMetricNames = make(map[string]bool, 0)
 	summaryMetricNames = make(map[string]bool, 0)
-	CounterMetricNames = make(map[string]*CounterMetric, 0)
-	gaugeMetricNames = make(map[string]bool, 0)
+	counterMetricNames = make(map[string]*CounterMetric, 0)
+	gaugeMetricNames = make(map[string]*GaugeMetric, 0)
 }
 
 func checkLabelNameAndValue(labelName, labelValue []string) error {
@@ -28,8 +28,12 @@ func checkLabelNameAndValue(labelName, labelValue []string) error {
 }
 
 func UnregisterCollectors() {
-	for _, v := range CounterMetricNames {
-		Registry.Unregister(v.CounterVec)
+	for _, v := range counterMetricNames {
+		Registry.Unregister(v.counterVec)
+	}
+
+	for _, v := range gaugeMetricNames {
+		Registry.Unregister(v.gaugeVec)
 	}
 }
 

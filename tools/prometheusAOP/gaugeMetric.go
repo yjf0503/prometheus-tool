@@ -1,6 +1,7 @@
 package prometheusAOP
 
 import (
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -9,15 +10,36 @@ type GaugeMetric struct {
 	help       string
 	labelName  []string
 	labelValue []string
-	GaugeVec   *prometheus.GaugeVec
+	gaugeOpts  prometheus.GaugeOpts
+	gaugeVec   *prometheus.GaugeVec
 }
 
-func (g *GaugeMetric) buildMetric() {
-	gaugeOpts := prometheus.GaugeOpts{
+func (g *GaugeMetric) setAttributes(name string, help string, labelName []string) {
+	g.name = name
+	g.help = help
+	g.labelName = labelName
+	g.gaugeOpts = prometheus.GaugeOpts{
 		Name: g.name,
 		Help: g.help,
 	}
-	g.GaugeVec = prometheus.NewGaugeVec(gaugeOpts, g.labelName)
+}
+
+func (g *GaugeMetric) CheckAndRegisterCollector(name string, help string, labelName string) *GaugeMetric {
+	gaugeMetric := gaugeMetricNames[name]
+	if gaugeMetric == nil {
+		gaugeMetric = &GaugeMetric{}
+		gaugeMetric.setAttributes(name, help, []string{labelName})
+		gaugeMetric.gaugeVec = prometheus.NewGaugeVec(gaugeMetric.gaugeOpts, gaugeMetric.labelName)
+		err := Registry.Register(gaugeMetric.gaugeVec)
+		if err != nil {
+			fmt.Print(err.Error())
+		}
+		gaugeMetricNames[name] = gaugeMetric
+	} else {
+		gaugeMetric.setAttributes(name, help, []string{labelName})
+	}
+
+	return gaugeMetric
 }
 
 func (g *GaugeMetric) DoObserve(labelValue []string, metricValue float64) error {
@@ -28,16 +50,7 @@ func (g *GaugeMetric) DoObserve(labelValue []string, metricValue float64) error 
 	}
 
 	labels := generateLabels(g.labelName, g.labelValue)
-	g.GaugeVec.With(labels).Add(metricValue)
+	g.gaugeVec.With(labels).Add(metricValue)
 
 	return nil
-}
-
-func (g *GaugeMetric) Before(name string, help string, labelName []string) {
-	g.name = name
-	g.help = help
-	g.labelName = labelName
-	g.buildMetric()
-
-	_ = Registry.Register(g.GaugeVec)
 }

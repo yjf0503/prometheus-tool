@@ -6,38 +6,37 @@ import (
 )
 
 type CounterMetric struct {
-	Name        string
-	Help        string
-	LabelName   []string
+	name        string
+	help        string
+	labelName   []string
 	labelValue  []string
-	CounterOpts prometheus.CounterOpts
-	CounterVec  *prometheus.CounterVec
+	counterOpts prometheus.CounterOpts
+	counterVec  *prometheus.CounterVec
 }
 
-func (c *CounterMetric) SetAttributes(name string, help string, labelName []string) {
-	c.Name = name
-	c.Help = help
-	c.LabelName = labelName
-	c.CounterOpts = prometheus.CounterOpts{
-		Name: c.Name,
-		Help: c.Help,
+func (c *CounterMetric) setAttributes(name string, help string, labelName []string) {
+	c.name = name
+	c.help = help
+	c.labelName = labelName
+	c.counterOpts = prometheus.CounterOpts{
+		Name: c.name,
+		Help: c.help,
 	}
-
 }
 
 func (c *CounterMetric) CheckAndRegisterCollector(name string, help string, labelName string) *CounterMetric {
-	counterMetric := CounterMetricNames[name]
+	counterMetric := counterMetricNames[name]
 	if counterMetric == nil {
 		counterMetric = &CounterMetric{}
-		counterMetric.SetAttributes(name, help, []string{labelName})
-		counterMetric.CounterVec = prometheus.NewCounterVec(counterMetric.CounterOpts, counterMetric.LabelName)
-		err := Registry.Register(counterMetric.CounterVec)
+		counterMetric.setAttributes(name, help, []string{labelName})
+		counterMetric.counterVec = prometheus.NewCounterVec(counterMetric.counterOpts, counterMetric.labelName)
+		err := Registry.Register(counterMetric.counterVec)
 		if err != nil {
 			fmt.Print(err.Error())
 		}
-		CounterMetricNames[name] = counterMetric
+		counterMetricNames[name] = counterMetric
 	} else {
-		counterMetric.SetAttributes(name, help, []string{labelName})
+		counterMetric.setAttributes(name, help, []string{labelName})
 	}
 
 	return counterMetric
@@ -45,7 +44,7 @@ func (c *CounterMetric) CheckAndRegisterCollector(name string, help string, labe
 
 func (c *CounterMetric) DoObserve(labelValue []string, metricValue float64) error {
 	c.labelValue = labelValue
-	checkLabelNameAndValueResult := checkLabelNameAndValue(c.LabelName, c.labelValue)
+	checkLabelNameAndValueResult := checkLabelNameAndValue(c.labelName, c.labelValue)
 	if checkLabelNameAndValueResult != nil {
 		return checkLabelNameAndValueResult
 	}
@@ -53,8 +52,8 @@ func (c *CounterMetric) DoObserve(labelValue []string, metricValue float64) erro
 	if metricValue < 0 {
 		metricValue = 0
 	}
-	labels := generateLabels(c.LabelName, c.labelValue)
-	c.CounterVec.With(labels).Add(metricValue)
+	labels := generateLabels(c.labelName, c.labelValue)
+	c.counterVec.With(labels).Add(metricValue)
 
 	return nil
 }
