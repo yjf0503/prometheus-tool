@@ -29,7 +29,7 @@ func (s *SummaryMetric) setAttributes(name, help string, objectives map[float64]
 }
 
 func (s *SummaryMetric) CheckAndRegisterCollector(name, help string, objectives map[float64]float64, labelName []string) *SummaryMetric {
-	summaryMetric := summaryMetricNames[name]
+	summaryMetric := summaryMetricNameMap[name]
 	if summaryMetric == nil {
 		summaryMetric = &SummaryMetric{}
 		summaryMetric.setAttributes(name, help, objectives, labelName)
@@ -38,10 +38,10 @@ func (s *SummaryMetric) CheckAndRegisterCollector(name, help string, objectives 
 		if err != nil {
 			fmt.Print(err.Error())
 		}
-		summaryMetricNames[name] = summaryMetric
 	} else {
 		summaryMetric.setAttributes(name, help, objectives, labelName)
 	}
+	summaryMetricNameMap[name] = summaryMetric
 
 	return summaryMetric
 }

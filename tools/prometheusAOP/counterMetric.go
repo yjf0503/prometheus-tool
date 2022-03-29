@@ -25,7 +25,7 @@ func (c *CounterMetric) setAttributes(name, help string, labelName []string) {
 }
 
 func (c *CounterMetric) CheckAndRegisterCollector(name, help string, labelName []string) *CounterMetric {
-	counterMetric := counterMetricNames[name]
+	counterMetric := counterMetricNameMap[name]
 	if counterMetric == nil {
 		counterMetric = &CounterMetric{}
 		counterMetric.setAttributes(name, help, labelName)
@@ -34,10 +34,10 @@ func (c *CounterMetric) CheckAndRegisterCollector(name, help string, labelName [
 		if err != nil {
 			fmt.Print(err.Error())
 		}
-		counterMetricNames[name] = counterMetric
 	} else {
 		counterMetric.setAttributes(name, help, labelName)
 	}
+	counterMetricNameMap[name] = counterMetric
 
 	return counterMetric
 }

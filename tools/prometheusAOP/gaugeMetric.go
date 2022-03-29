@@ -25,7 +25,7 @@ func (g *GaugeMetric) setAttributes(name, help string, labelName []string) {
 }
 
 func (g *GaugeMetric) CheckAndRegisterCollector(name, help string, labelName []string) *GaugeMetric {
-	gaugeMetric := gaugeMetricNames[name]
+	gaugeMetric := gaugeMetricNameMap[name]
 	if gaugeMetric == nil {
 		gaugeMetric = &GaugeMetric{}
 		gaugeMetric.setAttributes(name, help, labelName)
@@ -34,10 +34,10 @@ func (g *GaugeMetric) CheckAndRegisterCollector(name, help string, labelName []s
 		if err != nil {
 			fmt.Print(err.Error())
 		}
-		gaugeMetricNames[name] = gaugeMetric
 	} else {
 		gaugeMetric.setAttributes(name, help, labelName)
 	}
+	gaugeMetricNameMap[name] = gaugeMetric
 
 	return gaugeMetric
 }

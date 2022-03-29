@@ -8,16 +8,16 @@ import (
 // Registry 创建一个自定义的注册表
 var Registry = prometheus.NewRegistry()
 
-var histogramMetricNames map[string]*HistogramMetric
-var summaryMetricNames map[string]*SummaryMetric
-var counterMetricNames map[string]*CounterMetric
-var gaugeMetricNames map[string]*GaugeMetric
+var histogramMetricNameMap map[string]*HistogramMetric
+var summaryMetricNameMap map[string]*SummaryMetric
+var counterMetricNameMap map[string]*CounterMetric
+var gaugeMetricNameMap map[string]*GaugeMetric
 
 func init() {
-	histogramMetricNames = make(map[string]*HistogramMetric, 0)
-	summaryMetricNames = make(map[string]*SummaryMetric, 0)
-	counterMetricNames = make(map[string]*CounterMetric, 0)
-	gaugeMetricNames = make(map[string]*GaugeMetric, 0)
+	histogramMetricNameMap = make(map[string]*HistogramMetric, 0)
+	summaryMetricNameMap = make(map[string]*SummaryMetric, 0)
+	counterMetricNameMap = make(map[string]*CounterMetric, 0)
+	gaugeMetricNameMap = make(map[string]*GaugeMetric, 0)
 }
 
 func checkLabelNameAndValue(labelName, labelValue []string) error {
@@ -36,19 +36,19 @@ func generateLabels(labelName, labelValue []string) map[string]string {
 }
 
 func UnregisterCollectors() {
-	for _, v := range counterMetricNames {
+	for _, v := range counterMetricNameMap {
 		Registry.Unregister(v.counterVec)
 	}
 
-	for _, v := range gaugeMetricNames {
+	for _, v := range gaugeMetricNameMap {
 		Registry.Unregister(v.gaugeVec)
 	}
 
-	for _, v := range histogramMetricNames {
+	for _, v := range histogramMetricNameMap {
 		Registry.Unregister(v.histogramVec)
 	}
 
-	for _, v := range summaryMetricNames {
+	for _, v := range summaryMetricNameMap {
 		Registry.Unregister(v.summaryVec)
 	}
 }

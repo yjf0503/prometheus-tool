@@ -29,7 +29,7 @@ func (h *HistogramMetric) setAttributes(name, help string, buckets []float64, la
 }
 
 func (h *HistogramMetric) CheckAndRegisterCollector(name, help string, buckets []float64, labelName []string) *HistogramMetric {
-	histogramMetric := histogramMetricNames[name]
+	histogramMetric := histogramMetricNameMap[name]
 	if histogramMetric == nil {
 		histogramMetric = &HistogramMetric{}
 		histogramMetric.setAttributes(name, help, buckets, labelName)
@@ -38,10 +38,10 @@ func (h *HistogramMetric) CheckAndRegisterCollector(name, help string, buckets [
 		if err != nil {
 			fmt.Print(err.Error())
 		}
-		histogramMetricNames[name] = histogramMetric
 	} else {
 		histogramMetric.setAttributes(name, help, buckets, labelName)
 	}
+	histogramMetricNameMap[name] = histogramMetric
 
 	return histogramMetric
 }
