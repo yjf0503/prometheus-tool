@@ -27,7 +27,7 @@ func (s *SummaryMetric) setAttributes(name, help string, objectives map[float64]
 	}
 }
 
-func (s *SummaryMetric) CheckAndRegisterCollector(name, help string, objectives map[float64]float64, labelName []string) (*SummaryMetric, error) {
+func (s *SummaryMetric) GetCollector(name, help string, objectives map[float64]float64, labelName []string) (*SummaryMetric, error) {
 	summaryMetric := summaryMetricNameMap[name]
 	if summaryMetric == nil {
 		summaryMetric = &SummaryMetric{}

@@ -9,17 +9,19 @@ import (
 	"time"
 )
 
+var counterMetricName = "request_counter_total"
+var counterMetricHelp = "test request counter"
 var requestApi = [10]string{
-	"add_outside_oplog",
-	"batch_update_entity",
-	"delete_events",
-	"add_outside_oplog",
-	"batch_update_entity",
-	"delete_events",
-	"add_outside_oplog",
-	"batch_update_entity",
-	"delete_events",
-	"add_outside_oplog"}
+	"add_outside_oplog_async",
+	"batch_update_entity_cluster",
+	"delete_events_data",
+	"add_outside_oplog_async",
+	"batch_update_entity_cluster",
+	"delete_events_data",
+	"add_outside_oplog_async",
+	"batch_update_entity_cluster",
+	"delete_events_data",
+	"add_outside_oplog_async"}
 
 func init() {
 	go func() {
@@ -37,7 +39,11 @@ func TestCounterMetric(*testing.T) {
 		for i := 0; i < len(requestApi); i++ {
 			labelValue := []string{requestApi[i], "firstGoroutine"}
 			//收集指标
-			doObserve("request_counter_total", "test request count", labelName, labelValue, 1)
+			err := doCounterObserve(counterMetricName, counterMetricHelp, labelName, labelValue, 1)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
 			fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().Unix())
 			time.Sleep(time.Duration(1) * time.Second)
 		}
@@ -49,7 +55,11 @@ func TestCounterMetric(*testing.T) {
 		for i := 0; i < len(requestApi); i++ {
 			labelValue := []string{requestApi[i], "secondGoroutine"}
 			//收集指标
-			doObserve("request_counter_total", "test request count", labelName, labelValue, 1)
+			err := doCounterObserve(counterMetricName, counterMetricHelp, labelName, labelValue, 1)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
 			fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().Unix())
 			time.Sleep(time.Duration(1) * time.Second)
 		}
@@ -58,19 +68,19 @@ func TestCounterMetric(*testing.T) {
 	select {}
 }
 
-func doObserve(name, help string, labelName, labelValue []string, metricValue float64) {
+func doCounterObserve(name, help string, labelName, labelValue []string, metricValue float64) error {
 	counterMetric := &prometheusAOP.CounterMetric{}
 	//通过单例模式获取collector，如果不存在该collector，进行注册并返回
 	counterMetric, collectorErr := counterMetric.GetCollector(name, help, labelName)
 	if collectorErr != nil {
-		fmt.Println(collectorErr.Error())
-		return
+		return collectorErr
 	}
 
 	//执行指标数据收集
 	observeErr := counterMetric.DoObserve(labelValue, metricValue)
 	if observeErr != nil {
-		fmt.Println(observeErr.Error())
-		return
+		return observeErr
 	}
+
+	return nil
 }

@@ -27,7 +27,7 @@ func (h *HistogramMetric) setAttributes(name, help string, buckets []float64, la
 	}
 }
 
-func (h *HistogramMetric) CheckAndRegisterCollector(name, help string, buckets []float64, labelName []string) (*HistogramMetric, error) {
+func (h *HistogramMetric) GetCollector(name, help string, buckets []float64, labelName []string) (*HistogramMetric, error) {
 	histogramMetric := histogramMetricNameMap[name]
 	if histogramMetric == nil {
 		histogramMetric = &HistogramMetric{}

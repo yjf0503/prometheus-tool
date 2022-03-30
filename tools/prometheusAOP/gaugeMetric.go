@@ -23,7 +23,7 @@ func (g *GaugeMetric) setAttributes(name, help string, labelName []string) {
 	}
 }
 
-func (g *GaugeMetric) CheckAndRegisterCollector(name, help string, labelName []string) (*GaugeMetric, error) {
+func (g *GaugeMetric) GetCollector(name, help string, labelName []string) (*GaugeMetric, error) {
 	gaugeMetric := gaugeMetricNameMap[name]
 	if gaugeMetric == nil {
 		gaugeMetric = &GaugeMetric{}
