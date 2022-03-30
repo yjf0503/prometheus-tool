@@ -23,7 +23,7 @@ func (c *CounterMetric) setAttributes(name, help string, labelName []string) {
 	}
 }
 
-func (c *CounterMetric) CheckAndRegisterCollector(name, help string, labelName []string) (*CounterMetric, error) {
+func (c *CounterMetric) GetCollector(name, help string, labelName []string) (*CounterMetric, error) {
 	counterMetric := counterMetricNameMap[name]
 	if counterMetric == nil {
 		counterMetric = &CounterMetric{}
