@@ -3,6 +3,7 @@ package test
 import (
 	"awesomeProject/tools/prometheusAOP"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 	"testing"
 	"time"
 )
@@ -17,7 +18,7 @@ func TestHistogramMetric(*testing.T) {
 		labelName := []string{"path", "memo"}
 		for i := 0; i < len(requestApi); i++ {
 			labelValue := []string{requestApi[i], "firstGoroutine"}
-			//收集指标
+			//收集非时间指标
 			err := doHistogramObserve(histogramMetricName, histogramMetricHelp, requestTimeBucket, labelName, labelValue, requestTime[i])
 			if err != nil {
 				fmt.Println(err.Error())
@@ -33,7 +34,7 @@ func TestHistogramMetric(*testing.T) {
 		labelName := []string{"path", "memo"}
 		for i := 0; i < len(requestApi); i++ {
 			labelValue := []string{requestApi[i], "secondGoroutine"}
-			//收集指标
+			//收集非时间指标
 			err := doHistogramObserve(histogramMetricName, histogramMetricHelp, requestTimeBucket, labelName, labelValue, requestTime[i])
 			if err != nil {
 				fmt.Println(err.Error())
@@ -62,4 +63,64 @@ func doHistogramObserve(name, help string, buckets []float64, labelName, labelVa
 	}
 
 	return nil
+}
+
+func TestTimerHistogramMetric(*testing.T) {
+	go func() {
+		labelName := []string{"path", "memo"}
+		for i := 0; i < len(requestApi); i++ {
+			labelValue := []string{requestApi[i], "firstGoroutine"}
+			//生成histogram指标的timer
+			timer, err := getTimer(histogramMetricName, histogramMetricHelp, requestTimeBucket, labelName, labelValue)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			//模拟程序执行时间
+			time.Sleep(time.Duration(requestTime[i]*1000) * time.Millisecond)
+			//timer指标收集
+			timer.ObserveDuration()
+
+			fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().UnixNano())
+			time.Sleep(time.Duration(1) * time.Second)
+		}
+	}()
+
+	go func() {
+		time.Sleep(time.Duration(1) * time.Second)
+		labelName := []string{"path", "memo"}
+		for i := 0; i < len(requestApi); i++ {
+			labelValue := []string{requestApi[i], "secondGoroutine"}
+			//生成histogram指标的timer
+			timer, err := getTimer(histogramMetricName, histogramMetricHelp, requestTimeBucket, labelName, labelValue)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			//模拟程序执行时间
+			time.Sleep(time.Duration(requestTime[i]*1000) * time.Millisecond)
+			timer.ObserveDuration()
+
+			fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().UnixNano())
+			time.Sleep(time.Duration(1) * time.Second)
+		}
+	}()
+
+	select {}
+}
+
+func getTimer(name, help string, buckets []float64, labelName, labelValue []string) (*prometheus.Timer, error) {
+	histogramMetric := &prometheusAOP.HistogramMetric{}
+	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
+	histogramMetric, collectorErr := histogramMetric.GetCollector(name, help, buckets, labelName)
+	if collectorErr != nil {
+		return nil, collectorErr
+	}
+
+	timer, buildTimerErr := histogramMetric.BuildTimer(labelValue)
+	if buildTimerErr != nil {
+		return nil, buildTimerErr
+	}
+
+	return timer, nil
 }
