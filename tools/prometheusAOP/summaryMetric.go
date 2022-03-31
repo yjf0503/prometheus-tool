@@ -12,7 +12,6 @@ type SummaryMetric struct {
 	labelValue  []string
 	summaryOpts prometheus.SummaryOpts
 	summaryVec  *prometheus.SummaryVec
-	timer       *prometheus.Timer
 }
 
 func (s *SummaryMetric) setAttributes(name, help string, objectives map[float64]float64, labelName []string) {
@@ -51,22 +50,23 @@ func (s *SummaryMetric) GetCollector(name, help string, objectives map[float64]f
 
 func (s *SummaryMetric) DoObserve(labelValue []string, metricValue float64) error {
 	s.labelValue = labelValue
-	checkLabelNameAndValueErr := checkLabelNameAndValue(s.labelName, s.labelValue)
-	if checkLabelNameAndValueErr != nil {
-		return checkLabelNameAndValueErr
+	labels, generateLabelErr := generateLabels(s.labelName, s.labelValue)
+	if generateLabelErr != nil {
+		return generateLabelErr
 	}
-
-	labels := generateLabels(s.labelName, s.labelValue)
-
-	//1. 监控非时间指标时，可以手动传进来metricValue，进行observe
+	//监控非时间指标时，可以手动传进来metricValue，进行observe
 	s.summaryVec.With(labels).Observe(metricValue)
-
-	////2. 监控时间指标时，可以生成timer计时器，进行observe，将其放进summary指标中去
-	//timer := prometheus.NewTimer(s.summaryVec.With(labels))
-	////模拟程序执行时间，生成0-999的随机数
-	//rand.Seed(time.Now().UnixNano())
-	//time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
-	//timer.ObserveDuration()
-
 	return nil
+}
+
+func (s *SummaryMetric) BuildTimer(labelValue []string) (*prometheus.Timer, error) {
+	s.labelValue = labelValue
+	labels, generateLabelErr := generateLabels(s.labelName, s.labelValue)
+	if generateLabelErr != nil {
+		return nil, generateLabelErr
+	}
+	//监控时间指标时，生成timer计时器
+	timer := prometheus.NewTimer(s.summaryVec.With(labels))
+
+	return timer, nil
 }

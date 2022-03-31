@@ -47,15 +47,14 @@ func (c *CounterMetric) GetCollector(name, help string, labelName []string) (*Co
 
 func (c *CounterMetric) DoObserve(labelValue []string, metricValue float64) error {
 	c.labelValue = labelValue
-	checkLabelNameAndValueErr := checkLabelNameAndValue(c.labelName, c.labelValue)
-	if checkLabelNameAndValueErr != nil {
-		return checkLabelNameAndValueErr
+	labels, generateLabelErr := generateLabels(c.labelName, c.labelValue)
+	if generateLabelErr != nil {
+		return generateLabelErr
 	}
 
 	if metricValue < 0 {
 		metricValue = 0
 	}
-	labels := generateLabels(c.labelName, c.labelValue)
 	c.counterVec.With(labels).Add(metricValue)
 
 	return nil

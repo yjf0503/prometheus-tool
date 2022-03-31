@@ -71,7 +71,7 @@ func TestTimerHistogramMetric(*testing.T) {
 		for i := 0; i < len(requestApi); i++ {
 			labelValue := []string{requestApi[i], "firstGoroutine"}
 			//生成histogram指标的timer
-			timer, err := getTimer(histogramMetricName, histogramMetricHelp, requestTimeBucket, labelName, labelValue)
+			timer, err := getHistogramTimer(histogramMetricName, histogramMetricHelp, requestTimeBucket, labelName, labelValue)
 			if err != nil {
 				fmt.Println(err.Error())
 				return
@@ -92,7 +92,7 @@ func TestTimerHistogramMetric(*testing.T) {
 		for i := 0; i < len(requestApi); i++ {
 			labelValue := []string{requestApi[i], "secondGoroutine"}
 			//生成histogram指标的timer
-			timer, err := getTimer(histogramMetricName, histogramMetricHelp, requestTimeBucket, labelName, labelValue)
+			timer, err := getHistogramTimer(histogramMetricName, histogramMetricHelp, requestTimeBucket, labelName, labelValue)
 			if err != nil {
 				fmt.Println(err.Error())
 				return
@@ -109,7 +109,7 @@ func TestTimerHistogramMetric(*testing.T) {
 	select {}
 }
 
-func getTimer(name, help string, buckets []float64, labelName, labelValue []string) (*prometheus.Timer, error) {
+func getHistogramTimer(name, help string, buckets []float64, labelName, labelValue []string) (*prometheus.Timer, error) {
 	histogramMetric := &prometheusAOP.HistogramMetric{}
 	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
 	histogramMetric, collectorErr := histogramMetric.GetCollector(name, help, buckets, labelName)

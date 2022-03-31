@@ -3,6 +3,7 @@ package test
 import (
 	"awesomeProject/tools/prometheusAOP"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 	"testing"
 	"time"
 )
@@ -61,4 +62,64 @@ func doSummaryObserve(name, help string, objectives map[float64]float64, labelNa
 	}
 
 	return nil
+}
+
+func TestTimerSummaryMetric(*testing.T) {
+	go func() {
+		labelName := []string{"path", "memo"}
+		for i := 0; i < len(requestApi); i++ {
+			labelValue := []string{requestApi[i], "firstGoroutine"}
+			//生成histogram指标的timer
+			timer, err := getSummaryTimer(summaryMetricName, summaryMetricHelp, requestTimeObjective, labelName, labelValue)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			//模拟程序执行时间
+			time.Sleep(time.Duration(requestTime[i]*1000) * time.Millisecond)
+			//timer指标收集
+			timer.ObserveDuration()
+
+			fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().UnixNano())
+			time.Sleep(time.Duration(1) * time.Second)
+		}
+	}()
+
+	go func() {
+		time.Sleep(time.Duration(1) * time.Second)
+		labelName := []string{"path", "memo"}
+		for i := 0; i < len(requestApi); i++ {
+			labelValue := []string{requestApi[i], "secondGoroutine"}
+			//生成histogram指标的timer
+			timer, err := getSummaryTimer(histogramMetricName, histogramMetricHelp, requestTimeObjective, labelName, labelValue)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			//模拟程序执行时间
+			time.Sleep(time.Duration(requestTime[i]*1000) * time.Millisecond)
+			timer.ObserveDuration()
+
+			fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().UnixNano())
+			time.Sleep(time.Duration(1) * time.Second)
+		}
+	}()
+
+	select {}
+}
+
+func getSummaryTimer(name, help string, requestTimeObjective map[float64]float64, labelName, labelValue []string) (*prometheus.Timer, error) {
+	summaryMetric := &prometheusAOP.SummaryMetric{}
+	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
+	summaryMetric, collectorErr := summaryMetric.GetCollector(name, help, requestTimeObjective, labelName)
+	if collectorErr != nil {
+		return nil, collectorErr
+	}
+
+	timer, buildTimerErr := summaryMetric.BuildTimer(labelValue)
+	if buildTimerErr != nil {
+		return nil, buildTimerErr
+	}
+
+	return timer, nil
 }

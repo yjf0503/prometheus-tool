@@ -39,12 +39,18 @@ func checkLabelNameAndValue(labelName, labelValue []string) error {
 	return nil
 }
 
-func generateLabels(labelName, labelValue []string) map[string]string {
+func generateLabels(labelName, labelValue []string) (map[string]string, error) {
+	checkLabelNameAndValueErr := checkLabelNameAndValue(labelName, labelValue)
+	if checkLabelNameAndValueErr != nil {
+		return nil, checkLabelNameAndValueErr
+	}
+
 	labels := map[string]string{}
 	for k, v := range labelName {
 		labels[v] = labelValue[k]
 	}
-	return labels
+
+	return labels, nil
 }
 
 func UnregisterCollectors() {
@@ -63,9 +69,4 @@ func UnregisterCollectors() {
 	for _, v := range summaryMetricNameMap {
 		Registry.Unregister(v.summaryVec)
 	}
-}
-
-type metricObject interface {
-	buildMetric()                      //创建指标对象
-	DoObserve([]string, float64) error //给指标对象注入label值和指标值，对指标进行监控，如果label名称和label值不是一一对应，返回error
 }

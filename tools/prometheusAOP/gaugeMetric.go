@@ -47,12 +47,10 @@ func (g *GaugeMetric) GetCollector(name, help string, labelName []string) (*Gaug
 
 func (g *GaugeMetric) DoObserve(labelValue []string, metricValue float64) error {
 	g.labelValue = labelValue
-	checkLabelNameAndValueErr := checkLabelNameAndValue(g.labelName, g.labelValue)
-	if checkLabelNameAndValueErr != nil {
-		return checkLabelNameAndValueErr
+	labels, generateLabelErr := generateLabels(g.labelName, g.labelValue)
+	if generateLabelErr != nil {
+		return generateLabelErr
 	}
-
-	labels := generateLabels(g.labelName, g.labelValue)
 	g.gaugeVec.With(labels).Add(metricValue)
 
 	return nil
