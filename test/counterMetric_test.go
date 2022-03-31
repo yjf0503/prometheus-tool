@@ -31,6 +31,14 @@ func init() {
 			fmt.Println(err)
 		}
 	}()
+
+	go func() {
+		http.Handle("/metric", promhttp.Handler())
+		err := http.ListenAndServe(":8082", nil)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 }
 
 func TestCounterMetric(*testing.T) {
@@ -50,7 +58,6 @@ func TestCounterMetric(*testing.T) {
 	}()
 
 	go func() {
-		time.Sleep(time.Duration(1) * time.Second)
 		labelName := []string{"path", "memo"}
 		for i := 0; i < len(requestApi); i++ {
 			labelValue := []string{requestApi[i], "secondGoroutine"}

@@ -27,7 +27,6 @@ func TestGaugeMetric(*testing.T) {
 	}()
 
 	go func() {
-		time.Sleep(time.Duration(1) * time.Second)
 		labelName := []string{"path", "memo"}
 		for i := 0; i < len(requestApi); i++ {
 			labelValue := []string{requestApi[i], "secondGoroutine"}
