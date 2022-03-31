@@ -57,7 +57,16 @@ func (h *HistogramMetric) DoObserve(labelValue []string, metricValue float64) er
 	}
 
 	labels := generateLabels(h.labelName, h.labelValue)
+
+	//1. 监控非时间指标时，可以手动传进来metricValue，进行observe
 	h.histogramVec.With(labels).Observe(metricValue)
+
+	////2. 监控时间指标时，可以生成timer计时器，进行observe，将其放进histogram指标中去
+	//timer := prometheus.NewTimer(h.histogramVec.With(labels))
+	////模拟程序执行时间，生成0-999的随机数
+	//rand.Seed(time.Now().UnixNano())
+	//time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+	//timer.ObserveDuration()
 
 	return nil
 }

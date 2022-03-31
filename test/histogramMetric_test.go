@@ -9,8 +9,8 @@ import (
 
 var histogramMetricName = "request_histogram_total"
 var histogramMetricHelp = "test request histogram"
-var requestTimeBucket = []float64{50, 100, 250, 500, 1000, 2500, 5000, 10000}
-var requestTime = []float64{100, 200, 300, 400, 500, 600, 700, 800, 900, 1000}
+var requestTimeBucket = []float64{0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0}
+var requestTime = []float64{0.1, 0.15, 0.2, 0.23, 0.25, 0.4, 0.5, 0.7, 0.85, 0.9}
 
 func TestHistogramMetric(*testing.T) {
 	go func() {
@@ -29,6 +29,7 @@ func TestHistogramMetric(*testing.T) {
 	}()
 
 	go func() {
+		time.Sleep(time.Duration(1) * time.Second)
 		labelName := []string{"path", "memo"}
 		for i := 0; i < len(requestApi); i++ {
 			labelValue := []string{requestApi[i], "secondGoroutine"}
