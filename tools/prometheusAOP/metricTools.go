@@ -9,6 +9,7 @@ import (
 // Registry 创建一个自定义的注册表
 var Registry = prometheus.NewRegistry()
 
+// 记录本进程生命周期内创建的各类指标，避免重新注册
 var histogramMetricNameMap map[string]*HistogramMetric
 var summaryMetricNameMap map[string]*SummaryMetric
 var counterMetricNameMap map[string]*CounterMetric
@@ -21,6 +22,7 @@ func init() {
 	gaugeMetricNameMap = make(map[string]*GaugeMetric, 0)
 }
 
+//检测指标已注册的labelName和传入的labelName是否相同，不同的话返回error
 func checkLabelNames(name string, originalLabelName, inputLabelValue []string) error {
 	originalLabelNameString := strings.Join(originalLabelName, ",")
 	inputLabelNameString := strings.Join(inputLabelValue, ",")
@@ -32,6 +34,7 @@ func checkLabelNames(name string, originalLabelName, inputLabelValue []string) e
 	return nil
 }
 
+//检测指标的labelName和labelValue是否匹配，不匹配的话返回error
 func checkLabelNameAndValue(labelName, labelValue []string) error {
 	if len(labelName) != len(labelValue) {
 		return fmt.Errorf("labelName is incompatible to labelValue, labelName is %s, while labelValue is %s \n", labelName, labelValue)
@@ -39,6 +42,7 @@ func checkLabelNameAndValue(labelName, labelValue []string) error {
 	return nil
 }
 
+//生成labelName和labelValue的映射
 func generateLabels(labelName, labelValue []string) (map[string]string, error) {
 	checkLabelNameAndValueErr := checkLabelNameAndValue(labelName, labelValue)
 	if checkLabelNameAndValueErr != nil {

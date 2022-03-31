@@ -28,7 +28,9 @@ func (h *HistogramMetric) setAttributes(name, help string, buckets []float64, la
 
 func (h *HistogramMetric) GetCollector(name, help string, buckets []float64, labelName []string) (*HistogramMetric, error) {
 	histogramMetric := histogramMetricNameMap[name]
+	//1. 先查看之前有没有注册过同名的metric
 	if histogramMetric == nil {
+		//2. 如果之前没注册过，生成一个新的，再注册到自定义Registry中
 		histogramMetric = &HistogramMetric{}
 		histogramMetric.setAttributes(name, help, buckets, labelName)
 		histogramMetric.histogramVec = prometheus.NewHistogramVec(histogramMetric.histogramOpts, histogramMetric.labelName)
@@ -37,12 +39,15 @@ func (h *HistogramMetric) GetCollector(name, help string, buckets []float64, lab
 			return nil, registerErr
 		}
 	} else {
+		//3. 如果之前注册过同名的metric，需要检测下新传进来的labelName和之前的一不一致，必须保持一致，不然会返回error
 		checkLabelNamesErr := checkLabelNames(histogramMetric.name, histogramMetric.labelName, labelName)
 		if checkLabelNamesErr != nil {
 			return nil, checkLabelNamesErr
 		}
+		//3.1 更新下新的help和buckets配置项，如果有更新的话
 		histogramMetric.setAttributes(name, help, buckets, labelName)
 	}
+	//4. 把拿到的histogramMetric再添加到histogramMetricNameMap中，代表该histogramMetric已经在注册表中注册过了
 	histogramMetricNameMap[name] = histogramMetric
 
 	return histogramMetric, nil
@@ -50,6 +55,7 @@ func (h *HistogramMetric) GetCollector(name, help string, buckets []float64, lab
 
 func (h *HistogramMetric) DoObserve(labelValue []string, metricValue float64) error {
 	h.labelValue = labelValue
+	//生成后续监控要用到的labelName和labelValue的映射
 	labels, generateLabelErr := generateLabels(h.labelName, h.labelValue)
 	if generateLabelErr != nil {
 		return generateLabelErr
@@ -62,6 +68,7 @@ func (h *HistogramMetric) DoObserve(labelValue []string, metricValue float64) er
 
 func (h *HistogramMetric) BuildTimer(labelValue []string) (*prometheus.Timer, error) {
 	h.labelValue = labelValue
+	//生成后续监控要用到的labelName和labelValue的映射
 	labels, generateLabelErr := generateLabels(h.labelName, h.labelValue)
 	if generateLabelErr != nil {
 		return nil, generateLabelErr
