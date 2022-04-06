@@ -78,3 +78,18 @@ func (h *HistogramMetric) BuildTimer(labelValue []string) (*prometheus.Timer, er
 
 	return timer, nil
 }
+
+func (h *HistogramMetric) GetHistogramTimer(name, help string, buckets []float64, labelName, labelValue []string) (*prometheus.Timer, error) {
+	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
+	histogramMetric, collectorErr := h.GetCollector(name, help, buckets, labelName)
+	if collectorErr != nil {
+		return nil, collectorErr
+	}
+
+	timer, buildTimerErr := histogramMetric.BuildTimer(labelValue)
+	if buildTimerErr != nil {
+		return nil, buildTimerErr
+	}
+
+	return timer, nil
+}

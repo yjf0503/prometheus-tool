@@ -7,7 +7,8 @@ import (
 )
 
 // Registry 创建一个自定义的注册表
-var Registry = prometheus.NewRegistry()
+//var Registry = prometheus.NewRegistry()
+var Registry = prometheus.DefaultRegisterer
 
 // 记录本进程生命周期内创建的各类指标，避免重新注册
 var histogramMetricNameMap map[string]*HistogramMetric

@@ -24,19 +24,19 @@ var requestApi = [10]string{
 	"add_outside_oplog_async"}
 
 func init() {
-	go func() {
-		http.Handle("/metrics", promhttp.HandlerFor(prometheusAOP.Registry, promhttp.HandlerOpts{Registry: prometheusAOP.Registry}))
-		err := http.ListenAndServe(":8080", nil)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}()
+	//go func() {
+	//	metricsServer := &http.Server{Addr: ":8080", Handler: promhttp.HandlerFor(prometheusAOP.Registry, promhttp.HandlerOpts{Registry: prometheusAOP.Registry})}
+	//	fmt.Println("metrics port listening at ", ":8080")
+	//	if err := metricsServer.ListenAndServe(); err != nil {
+	//		fmt.Println("listen metrics port failed: ", err)
+	//	}
+	//}()
 
 	go func() {
-		http.Handle("/metric", promhttp.Handler())
-		err := http.ListenAndServe(":8082", nil)
-		if err != nil {
-			fmt.Println(err)
+		metricsServer := &http.Server{Addr: ":8082", Handler: promhttp.Handler()}
+		fmt.Println("metrics port listening at ", ":8082")
+		if err := metricsServer.ListenAndServe(); err != nil {
+			fmt.Println("listen metrics port failed: ", err)
 		}
 	}()
 }
