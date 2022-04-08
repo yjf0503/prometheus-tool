@@ -82,9 +82,8 @@ func doHistogramObserve(ctx context.Context, name, help string, buckets []float6
 	doHistogramObserveSpan, ctx := opentracing.StartSpanFromContext(ctx, "doHistogramObserve")
 	defer doHistogramObserveSpan.Finish()
 
-	histogramMetric := &prometheusAOP.HistogramMetric{}
 	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
-	histogramMetric, collectorErr := histogramMetric.GetCollector(name, help, buckets, labelName)
+	histogramMetric, collectorErr := prometheusAOP.GetHistogramCollector(name, help, buckets, labelName)
 	if collectorErr != nil {
 		return collectorErr
 	}
@@ -190,9 +189,8 @@ func getHistogramTimer(ctx context.Context, name, help string, buckets []float64
 	doHistogramObserveSpan, ctx := opentracing.StartSpanFromContext(ctx, "getHistogramTimer")
 	defer doHistogramObserveSpan.Finish()
 
-	histogramMetric := &prometheusAOP.HistogramMetric{}
 	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
-	histogramMetric, collectorErr := histogramMetric.GetCollector(name, help, buckets, labelName)
+	histogramMetric, collectorErr := prometheusAOP.GetHistogramCollector(name, help, buckets, labelName)
 	if collectorErr != nil {
 		return nil, collectorErr
 	}

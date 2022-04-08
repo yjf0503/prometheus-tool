@@ -26,7 +26,7 @@ func (h *HistogramMetric) setAttributes(name, help string, buckets []float64, la
 	}
 }
 
-func (h *HistogramMetric) GetCollector(name, help string, buckets []float64, labelName []string) (*HistogramMetric, error) {
+func GetHistogramCollector(name, help string, buckets []float64, labelName []string) (*HistogramMetric, error) {
 	histogramMetric := histogramMetricNameMap[name]
 	//1. 先查看之前有没有注册过同名的metric
 	if histogramMetric == nil {
@@ -79,9 +79,10 @@ func (h *HistogramMetric) BuildTimer(labelValue []string) (*prometheus.Timer, er
 	return timer, nil
 }
 
-func (h *HistogramMetric) GetHistogramTimer(name, help string, buckets []float64, labelName, labelValue []string) (*prometheus.Timer, error) {
+func GetHistogramTimer(name, help string, buckets []float64, labelName, labelValue []string) (*prometheus.Timer, error) {
+	histogramMetric := &HistogramMetric{}
 	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
-	histogramMetric, collectorErr := h.GetCollector(name, help, buckets, labelName)
+	histogramMetric, collectorErr := GetHistogramCollector(name, help, buckets, labelName)
 	if collectorErr != nil {
 		return nil, collectorErr
 	}
