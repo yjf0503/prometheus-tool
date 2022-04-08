@@ -25,6 +25,7 @@ func (g *GaugeMetric) setAttributes(name, help string, labelName, labelValue []s
 		Help: g.help,
 	}
 
+	//labelValue长度大于0，代表要生成的不是gaugeVec，而是有timer的gauge，所以要预先配置好ConstLabels
 	if len(labelValue) > 0 {
 		//生成后续监控要用到的labelName和labelValue的映射
 		labels, generateLabelErr := generateLabels(g.labelName, g.labelValue)
