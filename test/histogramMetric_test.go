@@ -9,6 +9,7 @@ import (
 	"github.com/uber/jaeger-client-go"
 	jaegerCfg "github.com/uber/jaeger-client-go/config"
 	"io"
+	"math/rand"
 	"strconv"
 	"testing"
 	"time"
@@ -98,91 +99,150 @@ func doHistogramObserve(ctx context.Context, name, help string, buckets []float6
 }
 
 func TestTimerHistogramMetric(*testing.T) {
-	go func() {
-		labelName := []string{"path", "memo"}
-		for i := 0; i < len(requestApi); i++ {
-			//创建jaeger全局tracer
-			ctx := context.Background()
-			tracer, closer := InitJaeger("TestTimerHistogramMetric")
-			opentracing.InitGlobalTracer(tracer)
+	for {
+		metricName := "tracks_by_entity_sorted_by_similarity_request_duration"
+		metricHelp := "request histogram"
+		labelName := []string{"stage", "requestID"}
+		requestID := uniqueId()
 
-			labelValue := []string{requestApi[i], "firstGoroutine"}
-			//生成histogram指标的timer
-			firstGoroutineSpan := tracer.StartSpan("firstGoroutine" + strconv.FormatInt(time.Now().UnixNano(), 10))
-			getHistogramTimerCtx := opentracing.ContextWithSpan(ctx, firstGoroutineSpan)
-			timer, err := getHistogramTimer(getHistogramTimerCtx, histogramMetricName, histogramMetricHelp, requestTimeBucket, labelName, labelValue)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-
-			//模拟程序执行时间
-			simulateExecCtx := opentracing.ContextWithSpan(ctx, firstGoroutineSpan)
-			simulateExecSpan, ctx := opentracing.StartSpanFromContext(simulateExecCtx, "simulateExec")
-			time.Sleep(time.Duration(requestTime[i]*1000) * time.Millisecond)
-			simulateExecSpan.Finish()
-
-			//timer指标收集
-			ObserveDurationCtx := opentracing.ContextWithSpan(ctx, firstGoroutineSpan)
-			ObserveDurationSpan, ctx := opentracing.StartSpanFromContext(ObserveDurationCtx, "ObserveDuration")
-			timer.ObserveDuration()
-			ObserveDurationSpan.Finish()
-
-			fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().UnixNano())
-			time.Sleep(time.Duration(1) * time.Second)
-
-			firstGoroutineSpan.Finish()
-			err = closer.Close()
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
+		//-------------------阶段一：入参校验-------------------
+		validateTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"validate", requestID})
+		if err != nil {
+			fmt.Println(err.Error())
+			return
 		}
-	}()
+		//模拟程序执行时间
+		time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+		validateTimer.ObserveDuration()
 
-	go func() {
+		//---------------阶段二：获取entity对应的轨迹-------------------
+		fetchTrackListByEntityTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"fetchTrackListByEntity", requestID})
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		//模拟程序执行时间
+		time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+		fetchTrackListByEntityTimer.ObserveDuration()
+
+		//---------------阶段三：根据轨迹获取特征-------------------
+		batchGetFeaturesTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"batchGetFeatures", requestID})
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		//模拟程序执行时间
+		time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+		batchGetFeaturesTimer.ObserveDuration()
+
+		//---------------阶段四：对特征进行比较，获取特征相似度-------------------
+		batchCompareTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"batchCompare", requestID})
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		//模拟程序执行时间
+		time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+		batchCompareTimer.ObserveDuration()
+
+		//---------------阶段五：根据特征相似度对轨迹进行排序-------------------
+		reorderGetTopKTracksWithSimilarityTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"reorderGetTopKTracksWithSimilarity", requestID})
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		//模拟程序执行时间
+		time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+		reorderGetTopKTracksWithSimilarityTimer.ObserveDuration()
+
 		time.Sleep(time.Duration(1) * time.Second)
-		labelName := []string{"path", "memo"}
-		for i := 0; i < len(requestApi); i++ {
-			//创建jaeger全局tracer
-			ctx := context.Background()
-			tracer, closer := InitJaeger("TestTimerHistogramMetric")
-			opentracing.InitGlobalTracer(tracer)
+	}
 
-			labelValue := []string{requestApi[i], "secondGoroutine"}
-			//生成histogram指标的timer
-			secondGoroutineSpan := tracer.StartSpan("secondGoroutine" + strconv.FormatInt(time.Now().UnixNano(), 10))
-			getHistogramTimerCtx := opentracing.ContextWithSpan(ctx, secondGoroutineSpan)
-			timer, err := getHistogramTimer(getHistogramTimerCtx, histogramMetricName, histogramMetricHelp, requestTimeBucket, labelName, labelValue)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			//模拟程序执行时间
-			simulateExecCtx := opentracing.ContextWithSpan(ctx, secondGoroutineSpan)
-			simulateExecSpan, ctx := opentracing.StartSpanFromContext(simulateExecCtx, "simulateExec")
-			time.Sleep(time.Duration(requestTime[i]*1000) * time.Millisecond)
-			simulateExecSpan.Finish()
+	//go func() {
+	//	labelName := []string{"path", "memo", "requestID"}
+	//	for i := 0; i < len(requestApi); i++ {
+	//		//创建jaeger全局tracer
+	//		ctx := context.Background()
+	//		tracer, closer := InitJaeger("TestTimerHistogramMetric")
+	//		opentracing.InitGlobalTracer(tracer)
+	//
+	//		labelValue := []string{requestApi[i], "firstGoroutine", uniqueId()}
+	//		//生成histogram指标的timer
+	//		firstGoroutineSpan := tracer.StartSpan("firstGoroutine" + strconv.FormatInt(time.Now().UnixNano(), 10))
+	//		getHistogramTimerCtx := opentracing.ContextWithSpan(ctx, firstGoroutineSpan)
+	//		timer, err := getHistogramTimer(getHistogramTimerCtx, histogramMetricName, histogramMetricHelp, requestTimeBucket, labelName, labelValue)
+	//		if err != nil {
+	//			fmt.Println(err.Error())
+	//			return
+	//		}
+	//
+	//		//模拟程序执行时间
+	//		simulateExecCtx := opentracing.ContextWithSpan(ctx, firstGoroutineSpan)
+	//		simulateExecSpan, ctx := opentracing.StartSpanFromContext(simulateExecCtx, "simulateExec")
+	//		time.Sleep(time.Duration(requestTime[i]*1000) * time.Millisecond)
+	//		simulateExecSpan.Finish()
+	//
+	//		//timer指标收集
+	//		ObserveDurationCtx := opentracing.ContextWithSpan(ctx, firstGoroutineSpan)
+	//		ObserveDurationSpan, ctx := opentracing.StartSpanFromContext(ObserveDurationCtx, "ObserveDuration")
+	//		timer.ObserveDuration()
+	//		ObserveDurationSpan.Finish()
+	//
+	//		fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().UnixNano())
+	//		time.Sleep(time.Duration(1) * time.Second)
+	//
+	//		firstGoroutineSpan.Finish()
+	//		err = closer.Close()
+	//		if err != nil {
+	//			fmt.Println(err.Error())
+	//			return
+	//		}
+	//	}
+	//}()
 
-			//timer指标收集
-			ObserveDurationCtx := opentracing.ContextWithSpan(ctx, secondGoroutineSpan)
-			ObserveDurationSpan, ctx := opentracing.StartSpanFromContext(ObserveDurationCtx, "ObserveDuration")
-			timer.ObserveDuration()
-			ObserveDurationSpan.Finish()
+	//go func() {
+	//	time.Sleep(time.Duration(1) * time.Second)
+	//	labelName := []string{"path", "memo", "requestID"}
+	//	for i := 0; i < len(requestApi); i++ {
+	//		//创建jaeger全局tracer
+	//		ctx := context.Background()
+	//		tracer, closer := InitJaeger("TestTimerHistogramMetric")
+	//		opentracing.InitGlobalTracer(tracer)
+	//
+	//		labelValue := []string{requestApi[i], "secondGoroutine", uniqueId()}
+	//		//生成histogram指标的timer
+	//		secondGoroutineSpan := tracer.StartSpan("secondGoroutine" + strconv.FormatInt(time.Now().UnixNano(), 10))
+	//		getHistogramTimerCtx := opentracing.ContextWithSpan(ctx, secondGoroutineSpan)
+	//		timer, err := getHistogramTimer(getHistogramTimerCtx, histogramMetricName, histogramMetricHelp, requestTimeBucket, labelName, labelValue)
+	//		if err != nil {
+	//			fmt.Println(err.Error())
+	//			return
+	//		}
+	//		//模拟程序执行时间
+	//		simulateExecCtx := opentracing.ContextWithSpan(ctx, secondGoroutineSpan)
+	//		simulateExecSpan, ctx := opentracing.StartSpanFromContext(simulateExecCtx, "simulateExec")
+	//		time.Sleep(time.Duration(requestTime[i]*1000) * time.Millisecond)
+	//		simulateExecSpan.Finish()
+	//
+	//		//timer指标收集
+	//		ObserveDurationCtx := opentracing.ContextWithSpan(ctx, secondGoroutineSpan)
+	//		ObserveDurationSpan, ctx := opentracing.StartSpanFromContext(ObserveDurationCtx, "ObserveDuration")
+	//		timer.ObserveDuration()
+	//		ObserveDurationSpan.Finish()
+	//
+	//		fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().UnixNano())
+	//		time.Sleep(time.Duration(1) * time.Second)
+	//
+	//		secondGoroutineSpan.Finish()
+	//		err = closer.Close()
+	//		if err != nil {
+	//			fmt.Println(err.Error())
+	//			return
+	//		}
+	//	}
+	//}()
 
-			fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().UnixNano())
-			time.Sleep(time.Duration(1) * time.Second)
-
-			secondGoroutineSpan.Finish()
-			err = closer.Close()
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-		}
-	}()
-
-	select {}
+	//select {}
 }
 
 func getHistogramTimer(ctx context.Context, name, help string, buckets []float64, labelName, labelValue []string) (*prometheus.Timer, error) {
