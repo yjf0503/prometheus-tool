@@ -112,7 +112,7 @@ func TestTimerHistogramMetric(*testing.T) {
 			return
 		}
 		//模拟程序执行时间
-		time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+		time.Sleep(time.Duration(rand.Intn(150)) * time.Millisecond)
 		validateTimer.ObserveDuration()
 
 		//---------------阶段二：获取entity对应的轨迹-------------------
@@ -122,7 +122,7 @@ func TestTimerHistogramMetric(*testing.T) {
 			return
 		}
 		//模拟程序执行时间
-		time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+		time.Sleep(time.Duration(rand.Intn(200)+200) * time.Millisecond)
 		fetchTrackListByEntityTimer.ObserveDuration()
 
 		//---------------阶段三：根据轨迹获取特征-------------------
@@ -132,7 +132,7 @@ func TestTimerHistogramMetric(*testing.T) {
 			return
 		}
 		//模拟程序执行时间
-		time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+		time.Sleep(time.Duration(rand.Intn(200)+400) * time.Millisecond)
 		batchGetFeaturesTimer.ObserveDuration()
 
 		//---------------阶段四：对特征进行比较，获取特征相似度-------------------
@@ -142,7 +142,7 @@ func TestTimerHistogramMetric(*testing.T) {
 			return
 		}
 		//模拟程序执行时间
-		time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+		time.Sleep(time.Duration(rand.Intn(200)+200) * time.Millisecond)
 		batchCompareTimer.ObserveDuration()
 
 		//---------------阶段五：根据特征相似度对轨迹进行排序-------------------
@@ -152,7 +152,7 @@ func TestTimerHistogramMetric(*testing.T) {
 			return
 		}
 		//模拟程序执行时间
-		time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+		time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
 		reorderGetTopKTracksWithSimilarityTimer.ObserveDuration()
 
 		time.Sleep(time.Duration(1) * time.Second)
