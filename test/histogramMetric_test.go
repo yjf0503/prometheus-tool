@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/opentracing/opentracing-go"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/uber/jaeger-client-go"
 	jaegerCfg "github.com/uber/jaeger-client-go/config"
 	"io"
@@ -252,22 +251,4 @@ func TestTimerHistogramMetric(*testing.T) {
 	//}()
 
 	//select {}
-}
-
-func getHistogramTimer(ctx context.Context, name, help string, buckets []float64, labelName, labelValue []string) (*prometheus.Timer, error) {
-	doHistogramObserveSpan, ctx := opentracing.StartSpanFromContext(ctx, "getHistogramTimer")
-	defer doHistogramObserveSpan.Finish()
-
-	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
-	histogramMetric, collectorErr := prometheusAOP.GetHistogramCollector(name, help, buckets, labelName)
-	if collectorErr != nil {
-		return nil, collectorErr
-	}
-
-	timer, buildTimerErr := histogramMetric.BuildTimer(labelValue)
-	if buildTimerErr != nil {
-		return nil, buildTimerErr
-	}
-
-	return timer, nil
 }
