@@ -53,9 +53,8 @@ func TestGaugeMetric(*testing.T) {
 }
 
 func doGaugeObserve(name, help string, labelName, labelValue []string, metricValue float64) error {
-	gaugeMetric := &prometheusAOP.GaugeMetric{}
 	//通过单例模式获取collector，如果不存在该collector，进行注册并返回
-	gaugeMetric, collectorErr := gaugeMetric.GetGaugeVecCollector(name, help, labelName)
+	gaugeMetric, collectorErr := prometheusAOP.GetGaugeVecCollector(name, help, labelName)
 	if collectorErr != nil {
 		return collectorErr
 	}

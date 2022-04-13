@@ -39,7 +39,7 @@ func (g *GaugeMetric) setAttributes(name, help string, labelName, labelValue []s
 	g.gaugeOpts = gaugeOpts
 }
 
-func (g *GaugeMetric) GetGaugeVecCollector(name, help string, labelName []string) (*GaugeMetric, error) {
+func GetGaugeVecCollector(name, help string, labelName []string) (*GaugeMetric, error) {
 	gaugeMetric := &GaugeMetric{}
 	gaugeMetricInterface, ok := gaugeMetricNameMap.Load(name)
 	//1. 先查看之前有没有注册过同名的metric

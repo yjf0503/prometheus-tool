@@ -23,7 +23,7 @@ func (c *CounterMetric) setAttributes(name, help string, labelName []string) {
 	}
 }
 
-func (c *CounterMetric) GetCollector(name, help string, labelName []string) (*CounterMetric, error) {
+func GetCounterCollector(name, help string, labelName []string) (*CounterMetric, error) {
 	counterMetric := &CounterMetric{}
 	counterMetricInterface, ok := counterMetricNameMap.Load(name)
 	//1. 先查看之前有没有注册过同名的metric

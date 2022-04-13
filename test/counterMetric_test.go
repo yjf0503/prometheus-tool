@@ -77,9 +77,8 @@ func TestCounterMetric(*testing.T) {
 }
 
 func doCounterObserve(name, help string, labelName, labelValue []string, metricValue float64) error {
-	counterMetric := &prometheusAOP.CounterMetric{}
 	//通过单例模式获取collector，如果不存在该collector，进行注册并返回
-	counterMetric, collectorErr := counterMetric.GetCollector(name, help, labelName)
+	counterMetric, collectorErr := prometheusAOP.GetCounterCollector(name, help, labelName)
 	if collectorErr != nil {
 		return collectorErr
 	}
