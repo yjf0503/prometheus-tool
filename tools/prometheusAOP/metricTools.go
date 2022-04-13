@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"strings"
+	"sync"
 )
 
 // Registry 创建一个自定义的注册表
@@ -11,16 +12,16 @@ import (
 var Registry = prometheus.DefaultRegisterer
 
 // 记录本进程生命周期内创建的各类指标，避免重新注册
-var histogramMetricNameMap map[string]*HistogramMetric
-var summaryMetricNameMap map[string]*SummaryMetric
-var counterMetricNameMap map[string]*CounterMetric
-var gaugeMetricNameMap map[string]*GaugeMetric
+var histogramMetricNameMap sync.Map
+var summaryMetricNameMap sync.Map
+var counterMetricNameMap sync.Map
+var gaugeMetricNameMap sync.Map
 
 func init() {
-	histogramMetricNameMap = make(map[string]*HistogramMetric, 0)
-	summaryMetricNameMap = make(map[string]*SummaryMetric, 0)
-	counterMetricNameMap = make(map[string]*CounterMetric, 0)
-	gaugeMetricNameMap = make(map[string]*GaugeMetric, 0)
+	histogramMetricNameMap = sync.Map{}
+	summaryMetricNameMap = sync.Map{}
+	counterMetricNameMap = sync.Map{}
+	gaugeMetricNameMap = sync.Map{}
 }
 
 //检测指标已注册的labelName和传入的labelName是否相同，不同的话返回error
@@ -59,19 +60,39 @@ func generateLabels(labelName, labelValue []string) (map[string]string, error) {
 }
 
 func UnregisterCollectors() {
-	for _, v := range counterMetricNameMap {
-		Registry.Unregister(v.counterVec)
-	}
+	counterMetricNameMap.Range(func(k, v interface{}) bool {
+		counterMetric, ok := v.(*CounterMetric)
+		if !ok {
+			return false
+		}
+		Registry.Unregister(counterMetric.counterVec)
+		return true
+	})
 
-	for _, v := range gaugeMetricNameMap {
-		Registry.Unregister(v.gaugeVec)
-	}
+	gaugeMetricNameMap.Range(func(k, v interface{}) bool {
+		gaugeMetric, ok := v.(*GaugeMetric)
+		if !ok {
+			return false
+		}
+		Registry.Unregister(gaugeMetric.gaugeVec)
+		return true
+	})
 
-	for _, v := range histogramMetricNameMap {
-		Registry.Unregister(v.histogramVec)
-	}
+	histogramMetricNameMap.Range(func(k, v interface{}) bool {
+		histogramMetric, ok := v.(*HistogramMetric)
+		if !ok {
+			return false
+		}
+		Registry.Unregister(histogramMetric.histogramVec)
+		return true
+	})
 
-	for _, v := range summaryMetricNameMap {
-		Registry.Unregister(v.summaryVec)
-	}
+	summaryMetricNameMap.Range(func(k, v interface{}) bool {
+		summaryMetric, ok := v.(*SummaryMetric)
+		if !ok {
+			return false
+		}
+		Registry.Unregister(summaryMetric.summaryVec)
+		return true
+	})
 }

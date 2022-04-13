@@ -24,29 +24,27 @@ func (c *CounterMetric) setAttributes(name, help string, labelName []string) {
 }
 
 func (c *CounterMetric) GetCollector(name, help string, labelName []string) (*CounterMetric, error) {
-	counterMetric := counterMetricNameMap[name]
+	counterMetric := &CounterMetric{}
+	counterMetricInterface, ok := counterMetricNameMap.Load(name)
 	//1. 先查看之前有没有注册过同名的metric
-	if counterMetric == nil {
+	if !ok {
 		//2. 如果之前没注册过，生成一个新的，再注册到自定义Registry中
-		counterMetric = &CounterMetric{}
 		counterMetric.setAttributes(name, help, labelName)
 		counterMetric.counterVec = prometheus.NewCounterVec(counterMetric.counterOpts, counterMetric.labelName)
 		registerErr := Registry.Register(counterMetric.counterVec)
 		if registerErr != nil {
 			return nil, registerErr
 		}
+		//3. 把拿到的counterMetric再添加到counterMetricNameMap中，代表该counterMetric已经在注册表中注册过了
+		counterMetricNameMap.Store(name, counterMetric)
 	} else {
-		//3. 如果之前注册过同名的metric，需要检测下新传进来的labelName和之前的一不一致，必须保持一致，不然会返回error
+		counterMetric = counterMetricInterface.(*CounterMetric)
+		//4. 如果之前注册过同名的metric，需要检测下新传进来的labelName和之前的一不一致，必须保持一致，不然会返回error
 		checkLabelNamesErr := checkLabelNames(counterMetric.name, counterMetric.labelName, labelName)
 		if checkLabelNamesErr != nil {
 			return nil, checkLabelNamesErr
 		}
-		//3.1 更新下新的help配置项，如果有更新的话
-		counterMetric.setAttributes(name, help, labelName)
 	}
-	//4. 把拿到的counterMetric再添加到counterMetricNameMap中，代表该counterMetric已经在注册表中注册过了
-	counterMetricNameMap[name] = counterMetric
-
 	return counterMetric, nil
 }
 

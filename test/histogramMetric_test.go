@@ -105,6 +105,13 @@ func TestTimerHistogramMetric(*testing.T) {
 		labelName := []string{"stage", "requestID"}
 		requestID := uniqueId()
 
+		//-------------------阶段0：全局请求时长-------------------
+		totalTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"total", requestID})
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
 		//-------------------阶段一：入参校验-------------------
 		validateTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"validate", requestID})
 		if err != nil {
@@ -112,7 +119,7 @@ func TestTimerHistogramMetric(*testing.T) {
 			return
 		}
 		//模拟程序执行时间
-		time.Sleep(time.Duration(rand.Intn(150)) * time.Millisecond)
+		time.Sleep(time.Duration(rand.Intn(50)+100) * time.Millisecond)
 		validateTimer.ObserveDuration()
 
 		//---------------阶段二：获取entity对应的轨迹-------------------
@@ -154,6 +161,8 @@ func TestTimerHistogramMetric(*testing.T) {
 		//模拟程序执行时间
 		time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
 		reorderGetTopKTracksWithSimilarityTimer.ObserveDuration()
+
+		totalTimer.ObserveDuration()
 
 		time.Sleep(time.Duration(1) * time.Second)
 	}

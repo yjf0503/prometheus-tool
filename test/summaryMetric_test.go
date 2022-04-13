@@ -50,7 +50,7 @@ func TestSummaryMetric(*testing.T) {
 func doSummaryObserve(name, help string, objectives map[float64]float64, labelName, labelValue []string, metricValue float64) error {
 	summaryMetric := &prometheusAOP.SummaryMetric{}
 	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
-	summaryMetric, collectorErr := summaryMetric.GetCollector(name, help, objectives, labelName)
+	summaryMetric, collectorErr := prometheusAOP.GetSummaryCollector(name, help, objectives, labelName)
 	if collectorErr != nil {
 		return collectorErr
 	}
@@ -111,7 +111,7 @@ func TestTimerSummaryMetric(*testing.T) {
 func getSummaryTimer(name, help string, requestTimeObjective map[float64]float64, labelName, labelValue []string) (*prometheus.Timer, error) {
 	summaryMetric := &prometheusAOP.SummaryMetric{}
 	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
-	summaryMetric, collectorErr := summaryMetric.GetCollector(name, help, requestTimeObjective, labelName)
+	summaryMetric, collectorErr := prometheusAOP.GetSummaryCollector(name, help, requestTimeObjective, labelName)
 	if collectorErr != nil {
 		return nil, collectorErr
 	}

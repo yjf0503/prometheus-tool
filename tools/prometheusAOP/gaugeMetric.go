@@ -40,29 +40,27 @@ func (g *GaugeMetric) setAttributes(name, help string, labelName, labelValue []s
 }
 
 func (g *GaugeMetric) GetGaugeVecCollector(name, help string, labelName []string) (*GaugeMetric, error) {
-	gaugeMetric := gaugeMetricNameMap[name]
+	gaugeMetric := &GaugeMetric{}
+	gaugeMetricInterface, ok := gaugeMetricNameMap.Load(name)
 	//1. 先查看之前有没有注册过同名的metric
-	if gaugeMetric == nil {
+	if !ok {
 		//2. 如果之前没注册过，生成一个新的，再注册到自定义Registry中
-		gaugeMetric = &GaugeMetric{}
 		gaugeMetric.setAttributes(name, help, labelName, []string{})
 		gaugeMetric.gaugeVec = prometheus.NewGaugeVec(gaugeMetric.gaugeOpts, gaugeMetric.labelName)
 		registerErr := Registry.Register(gaugeMetric.gaugeVec)
 		if registerErr != nil {
 			return nil, registerErr
 		}
+		//3. 把拿到的gaugeMetric再添加到gaugeMetricNameMap中，代表该gaugeMetric已经在注册表中注册过了
+		gaugeMetricNameMap.Store(name, gaugeMetric)
 	} else {
-		//3. 如果之前注册过同名的metric，需要检测下新传进来的labelName和之前的一不一致，必须保持一致，不然会返回error
+		gaugeMetric = gaugeMetricInterface.(*GaugeMetric)
+		//4. 如果之前注册过同名的metric，需要检测下新传进来的labelName和之前的一不一致，必须保持一致，不然会返回error
 		checkLabelNamesErr := checkLabelNames(gaugeMetric.name, gaugeMetric.labelName, labelName)
 		if checkLabelNamesErr != nil {
 			return nil, checkLabelNamesErr
 		}
-		//3.1 更新下新的help配置项，如果有更新的话
-		gaugeMetric.setAttributes(name, help, labelName, []string{})
 	}
-	//4. 把拿到的gaugeMetric再添加到gaugeMetricNameMap中，代表该gaugeMetric已经在注册表中注册过了
-	gaugeMetricNameMap[name] = gaugeMetric
-
 	return gaugeMetric, nil
 }
 
