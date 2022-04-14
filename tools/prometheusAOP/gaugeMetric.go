@@ -11,10 +11,8 @@ type GaugeMetric struct {
 	help       string
 	labelName  []string
 	labelValue []string
-	labels     prometheus.Labels
 	gaugeOpts  prometheus.GaugeOpts
 	gaugeVec   *prometheus.GaugeVec
-	gauge      prometheus.Gauge
 }
 
 func (g *GaugeMetric) setAttributes(name, help string, labelName, labelValue []string) {
@@ -22,23 +20,10 @@ func (g *GaugeMetric) setAttributes(name, help string, labelName, labelValue []s
 	g.help = help
 	g.labelName = labelName
 	g.labelValue = labelValue
-	gaugeOpts := prometheus.GaugeOpts{
+	g.gaugeOpts = prometheus.GaugeOpts{
 		Name: g.name,
 		Help: g.help,
 	}
-
-	//labelValue长度大于0，代表要生成的不是gaugeVec，而是有timer的gauge，所以要预先配置好ConstLabels
-	if len(labelValue) > 0 {
-		//生成后续监控要用到的labelName和labelValue的映射
-		labels, generateLabelErr := generateLabels(g.labelName, g.labelValue)
-		if generateLabelErr != nil {
-			return
-		}
-		g.labels = labels
-		gaugeOpts.ConstLabels = g.labels
-	}
-
-	g.gaugeOpts = gaugeOpts
 }
 
 func GetGaugeCollectorAndSetTimer(name, help string, labelName []string) (*GaugeMetric, time.Time) {

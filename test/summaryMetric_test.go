@@ -3,7 +3,6 @@ package test
 import (
 	"awesomeProject/tools/prometheusAOP"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
 	"testing"
 	"time"
 )
@@ -70,7 +69,7 @@ func TestTimerSummaryMetric(*testing.T) {
 		for i := 0; i < len(requestApi); i++ {
 			labelValue := []string{requestApi[i], "firstGoroutine"}
 			//生成histogram指标的timer
-			timer, err := getSummaryTimer(summaryMetricName, summaryMetricHelp, requestTimeObjective, labelName, labelValue)
+			timer, err := prometheusAOP.GetSummaryTimer(summaryMetricName, summaryMetricHelp, requestTimeObjective, labelName, labelValue)
 			if err != nil {
 				fmt.Println(err.Error())
 				return
@@ -91,7 +90,7 @@ func TestTimerSummaryMetric(*testing.T) {
 		for i := 0; i < len(requestApi); i++ {
 			labelValue := []string{requestApi[i], "secondGoroutine"}
 			//生成histogram指标的timer
-			timer, err := getSummaryTimer(histogramMetricName, histogramMetricHelp, requestTimeObjective, labelName, labelValue)
+			timer, err := prometheusAOP.GetSummaryTimer(histogramMetricName, histogramMetricHelp, requestTimeObjective, labelName, labelValue)
 			if err != nil {
 				fmt.Println(err.Error())
 				return
@@ -106,20 +105,4 @@ func TestTimerSummaryMetric(*testing.T) {
 	}()
 
 	select {}
-}
-
-func getSummaryTimer(name, help string, requestTimeObjective map[float64]float64, labelName, labelValue []string) (*prometheus.Timer, error) {
-	summaryMetric := &prometheusAOP.SummaryMetric{}
-	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
-	summaryMetric, collectorErr := prometheusAOP.GetSummaryCollector(name, help, requestTimeObjective, labelName)
-	if collectorErr != nil {
-		return nil, collectorErr
-	}
-
-	timer, buildTimerErr := summaryMetric.BuildTimer(labelValue)
-	if buildTimerErr != nil {
-		return nil, buildTimerErr
-	}
-
-	return timer, nil
 }

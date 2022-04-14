@@ -15,6 +15,18 @@ type HistogramMetric struct {
 	histogramVec  *prometheus.HistogramVec
 }
 
+func (h *HistogramMetric) setAttributes(name, help string, buckets []float64, labelName []string) {
+	h.name = name
+	h.help = help
+	h.buckets = buckets
+	h.labelName = labelName
+	h.histogramOpts = prometheus.HistogramOpts{
+		Name:    h.name,
+		Help:    h.help,
+		Buckets: h.buckets,
+	}
+}
+
 func GetHistogramCollector(name, help string, buckets []float64, labelName []string) (*HistogramMetric, error) {
 	histogramMetric := &HistogramMetric{}
 	histogramMetricInterface, ok := histogramMetricNameMap.Load(name)
@@ -41,18 +53,6 @@ func GetHistogramCollector(name, help string, buckets []float64, labelName []str
 		}
 	}
 	return histogramMetric, nil
-}
-
-func (h *HistogramMetric) setAttributes(name, help string, buckets []float64, labelName []string) {
-	h.name = name
-	h.help = help
-	h.buckets = buckets
-	h.labelName = labelName
-	h.histogramOpts = prometheus.HistogramOpts{
-		Name:    h.name,
-		Help:    h.help,
-		Buckets: h.buckets,
-	}
 }
 
 func (h *HistogramMetric) DoObserve(labelValue []string, metricValue float64) error {

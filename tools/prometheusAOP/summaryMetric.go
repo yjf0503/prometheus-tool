@@ -68,6 +68,21 @@ func (s *SummaryMetric) DoObserve(labelValue []string, metricValue float64) erro
 	return nil
 }
 
+func GetSummaryTimer(name, help string, objective map[float64]float64, labelName, labelValue []string) (*prometheus.Timer, error) {
+	//判断collector是否已注册到prometheus的注册表中，通过单例模式控制
+	summaryMetric, collectorErr := GetSummaryCollector(name, help, objective, labelName)
+	if collectorErr != nil {
+		return nil, collectorErr
+	}
+
+	timer, buildTimerErr := summaryMetric.BuildTimer(labelValue)
+	if buildTimerErr != nil {
+		return nil, buildTimerErr
+	}
+
+	return timer, nil
+}
+
 func (s *SummaryMetric) BuildTimer(labelValue []string) (*prometheus.Timer, error) {
 	s.labelValue = labelValue
 	//生成后续监控要用到的labelName和labelValue的映射
