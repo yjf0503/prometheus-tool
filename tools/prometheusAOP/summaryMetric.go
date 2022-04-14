@@ -1,6 +1,7 @@
 package prometheusAOP
 
 import (
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -41,7 +42,10 @@ func GetSummaryCollector(name, help string, objectives map[float64]float64, labe
 		//3. 把拿到的summaryMetric再添加到summaryMetricNameMap中，代表该summaryMetric已经在注册表中注册过了
 		summaryMetricNameMap.Store(name, summaryMetric)
 	} else {
-		summaryMetric = summaryMetricInterface.(*SummaryMetric)
+		summaryMetric, ok = summaryMetricInterface.(*SummaryMetric)
+		if !ok {
+			return nil, fmt.Errorf("cannot find metric by name %s", name)
+		}
 		//4. 如果之前注册过同名的metric，需要检测下新传进来的labelName和之前的一不一致，必须保持一致，不然会返回error
 		checkLabelNamesErr := checkLabelNames(summaryMetric.name, summaryMetric.labelName, labelName)
 		if checkLabelNamesErr != nil {

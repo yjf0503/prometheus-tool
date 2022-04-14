@@ -1,7 +1,9 @@
 package prometheusAOP
 
 import (
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
+	"time"
 )
 
 type GaugeMetric struct {
@@ -39,7 +41,11 @@ func (g *GaugeMetric) setAttributes(name, help string, labelName, labelValue []s
 	g.gaugeOpts = gaugeOpts
 }
 
-func GetGaugeVecCollector(name, help string, labelName []string) (*GaugeMetric, error) {
+func GetGaugeCollectorAndSetTimer(name, help string, labelName []string) (*GaugeMetric, time.Time) {
+	return GetGaugeCollector(name, help, labelName), time.Now()
+}
+
+func GetGaugeCollector(name, help string, labelName []string) *GaugeMetric {
 	gaugeMetric := &GaugeMetric{}
 	gaugeMetricInterface, ok := gaugeMetricNameMap.Load(name)
 	//1. 先查看之前有没有注册过同名的metric
@@ -49,19 +55,43 @@ func GetGaugeVecCollector(name, help string, labelName []string) (*GaugeMetric, 
 		gaugeMetric.gaugeVec = prometheus.NewGaugeVec(gaugeMetric.gaugeOpts, gaugeMetric.labelName)
 		registerErr := Registry.Register(gaugeMetric.gaugeVec)
 		if registerErr != nil {
-			return nil, registerErr
+			fmt.Println(registerErr.Error())
+			//如果有error，返回一个空metric对象
+			return &GaugeMetric{}
 		}
 		//3. 把拿到的gaugeMetric再添加到gaugeMetricNameMap中，代表该gaugeMetric已经在注册表中注册过了
 		gaugeMetricNameMap.Store(name, gaugeMetric)
 	} else {
-		gaugeMetric = gaugeMetricInterface.(*GaugeMetric)
+		gaugeMetric, ok = gaugeMetricInterface.(*GaugeMetric)
+		if !ok {
+			err := fmt.Errorf("cannot find metric by name %s", name)
+			fmt.Println(err.Error())
+			//如果有error，返回一个空metric对象
+			return &GaugeMetric{}
+		}
 		//4. 如果之前注册过同名的metric，需要检测下新传进来的labelName和之前的一不一致，必须保持一致，不然会返回error
 		checkLabelNamesErr := checkLabelNames(gaugeMetric.name, gaugeMetric.labelName, labelName)
 		if checkLabelNamesErr != nil {
-			return nil, checkLabelNamesErr
+			fmt.Println(checkLabelNamesErr.Error())
+			//如果有error，返回一个空metric对象
+			return &GaugeMetric{}
 		}
 	}
-	return gaugeMetric, nil
+	return gaugeMetric
+}
+
+func (g *GaugeMetric) DoObserveTimer(labelValue []string, timerStart time.Time) {
+	//如果name字段为空，代表metric对象生成有问题，直接返回
+	if g.name == "" {
+		return
+	}
+	//计算与timeStart的相隔时间长度，并进行observe
+	timerEnd := time.Now()
+	timerCost := timerEnd.Sub(timerStart).Microseconds()
+	err := g.DoObserve(labelValue, float64(timerCost))
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 }
 
 func (g *GaugeMetric) DoObserve(labelValue []string, metricValue float64) error {
@@ -72,37 +102,7 @@ func (g *GaugeMetric) DoObserve(labelValue []string, metricValue float64) error 
 		return generateLabelErr
 	}
 	//进行计数操作
-	g.gaugeVec.With(labels).Add(metricValue)
+	g.gaugeVec.With(labels).Set(metricValue)
 
 	return nil
-}
-
-func GetGaugeCollector(name, help string, labelName, labelValue []string) (*GaugeMetric, error) {
-	//生成一个新的metric，再注册到Registry中
-	gaugeMetric := &GaugeMetric{}
-	gaugeMetric.setAttributes(name, help, labelName, labelValue)
-	gauge := prometheus.NewGauge(gaugeMetric.gaugeOpts)
-	gaugeMetric.gauge = gauge
-	registerErr := Registry.Register(gauge)
-	if registerErr != nil {
-		return nil, registerErr
-	}
-
-	return gaugeMetric, nil
-}
-
-func (g *GaugeMetric) BuildTimer() *prometheus.Timer {
-	//监控时间指标时，生成timer计时器
-	gauge := g.gauge
-	return prometheus.NewTimer(prometheus.ObserverFunc(gauge.Set))
-}
-
-func GetGaugeTimer(name, help string, labelName, labelValue []string) (*prometheus.Timer, error) {
-	//获取gauge collector
-	gaugeMetric, collectorErr := GetGaugeCollector(name, help, labelName, labelValue)
-	if collectorErr != nil {
-		return nil, collectorErr
-	}
-
-	return gaugeMetric.BuildTimer(), nil
 }

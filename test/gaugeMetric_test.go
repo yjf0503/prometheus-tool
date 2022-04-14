@@ -14,107 +14,62 @@ import (
 	"time"
 )
 
-var gaugeMetricName = "request_gauge_total"
-var gaugeMetricHelp = "test request gauge"
-
-func TestGaugeMetric(*testing.T) {
-	go func() {
-		labelName := []string{"path", "memo"}
-		for i := 0; i < len(requestApi); i++ {
-			labelValue := []string{requestApi[i], "firstGoroutine"}
-			//收集指标
-			err := doGaugeObserve(gaugeMetricName, gaugeMetricHelp, labelName, labelValue, 1)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().Unix())
-			time.Sleep(time.Duration(1) * time.Second)
-		}
-	}()
-
-	go func() {
-		time.Sleep(time.Duration(1) * time.Second)
-		labelName := []string{"path", "memo"}
-		for i := 0; i < len(requestApi); i++ {
-			labelValue := []string{requestApi[i], "secondGoroutine"}
-			//收集指标
-			err := doGaugeObserve(gaugeMetricName, gaugeMetricHelp, labelName, labelValue, 1)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().Unix())
-			time.Sleep(time.Duration(1) * time.Second)
-		}
-	}()
-
-	select {}
-}
-
-func doGaugeObserve(name, help string, labelName, labelValue []string, metricValue float64) error {
-	//通过单例模式获取collector，如果不存在该collector，进行注册并返回
-	gaugeMetric, collectorErr := prometheusAOP.GetGaugeVecCollector(name, help, labelName)
-	if collectorErr != nil {
-		return collectorErr
-	}
-
-	//执行指标数据收集
-	observeErr := gaugeMetric.DoObserve(labelValue, metricValue)
-	if observeErr != nil {
-		return observeErr
-	}
-
-	return nil
-}
+var gaugeMetricName = "TracksByEntitySortedBySimilarity_request_duration"
+var gaugeMetricHelp = "request gauge"
 
 func TestGaugeTimerMetric(*testing.T) {
-	go func() {
-		labelName := []string{"path", "memo", "requestID"}
-		for i := 0; i < len(requestApi); i++ {
-			labelValue := []string{requestApi[i], "firstGoroutine", uniqueId()}
+	for {
+		labelName := []string{"stage"}
 
-			//生成gauge指标的timer
-			timer, err := prometheusAOP.GetGaugeTimer(gaugeMetricName, gaugeMetricHelp, labelName, labelValue)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
+		//-------------------阶段0：全局请求时长-------------------
+		//获取total监控计时器
+		totalMetric, totalTimerStart := prometheusAOP.GetGaugeCollectorAndSetTimer(gaugeMetricName, gaugeMetricHelp, labelName)
 
-			//模拟程序执行时间
-			time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
+		//-------------------阶段一：入参校验-------------------
+		//获取validate监控计时器
+		validateMetric, validateTimerStart := prometheusAOP.GetGaugeCollectorAndSetTimer(gaugeMetricName, gaugeMetricHelp, labelName)
+		//模拟程序执行时间
+		time.Sleep(time.Duration(rand.Intn(50)+100) * time.Millisecond)
+		//validate监控计时器指标收集
+		validateMetric.DoObserveTimer([]string{"validate"}, validateTimerStart)
 
-			//timer指标收集
-			timer.ObserveDuration()
-			fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().Unix())
-			time.Sleep(time.Duration(1) * time.Second)
-		}
-	}()
+		//---------------阶段二：获取entity对应的轨迹-------------------
+		//获取fetchTrackListByEntity监控计时器
+		fetchTrackListByEntityMetric, fetchTrackListByEntityTimerStart := prometheusAOP.GetGaugeCollectorAndSetTimer(gaugeMetricName, gaugeMetricHelp, labelName)
+		//模拟程序执行时间
+		time.Sleep(time.Duration(rand.Intn(200)+200) * time.Millisecond)
+		//fetchTrackListByEntity监控计时器指标收集
+		fetchTrackListByEntityMetric.DoObserveTimer([]string{"fetchTrackListByEntity"}, fetchTrackListByEntityTimerStart)
 
-	go func() {
+		//---------------阶段三：根据轨迹获取特征-------------------
+		//获取batchGetFeatures监控计时器
+		batchGetFeaturesMetric, batchGetFeaturesTimerStart := prometheusAOP.GetGaugeCollectorAndSetTimer(gaugeMetricName, gaugeMetricHelp, labelName)
+		//模拟程序执行时间
+		time.Sleep(time.Duration(rand.Intn(200)+400) * time.Millisecond)
+		//batchGetFeatures监控计时器指标收集
+		batchGetFeaturesMetric.DoObserveTimer([]string{"batchGetFeatures"}, batchGetFeaturesTimerStart)
+
+		//---------------阶段四：对特征进行比较，获取特征相似度-------------------
+		//获取batchCompare监控计时器
+		batchCompareMetric, batchCompareTimerStart := prometheusAOP.GetGaugeCollectorAndSetTimer(gaugeMetricName, gaugeMetricHelp, labelName)
+		//模拟程序执行时间
+		time.Sleep(time.Duration(rand.Intn(200)+200) * time.Millisecond)
+		//batchCompareMetric监控计时器指标收集
+		batchCompareMetric.DoObserveTimer([]string{"batchCompare"}, batchCompareTimerStart)
+
+		//---------------阶段五：根据特征相似度对轨迹进行排序-------------------
+		//获取reorder监控计时器
+		reorderMetric, reorderTimerStart := prometheusAOP.GetGaugeCollectorAndSetTimer(gaugeMetricName, gaugeMetricHelp, labelName)
+		//模拟程序执行时间
+		time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
+		//reorder监控计时器指标收集
+		reorderMetric.DoObserveTimer([]string{"reorder"}, reorderTimerStart)
+
+		//total监控计时器指标收集
+		totalMetric.DoObserveTimer([]string{"total"}, totalTimerStart)
+
 		time.Sleep(time.Duration(1) * time.Second)
-		labelName := []string{"path", "memo", "requestID"}
-		for i := 0; i < len(requestApi); i++ {
-			labelValue := []string{requestApi[i], "secondGoroutine", uniqueId()}
-
-			//生成gauge指标的timer
-			timer, err := prometheusAOP.GetGaugeTimer(gaugeMetricName, gaugeMetricHelp, labelName, labelValue)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-
-			//模拟程序执行时间
-			time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
-
-			//timer指标收集
-			timer.ObserveDuration()
-			fmt.Printf("requestApi - requestTime: %s - %d \n", requestApi[i], time.Now().Unix())
-			time.Sleep(time.Duration(1) * time.Second)
-		}
-	}()
-
-	select {}
+	}
 }
 
 // GetSha256String 生成32位md5字串

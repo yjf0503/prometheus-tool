@@ -1,6 +1,7 @@
 package prometheusAOP
 
 import (
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -38,7 +39,10 @@ func GetCounterCollector(name, help string, labelName []string) (*CounterMetric,
 		//3. 把拿到的counterMetric再添加到counterMetricNameMap中，代表该counterMetric已经在注册表中注册过了
 		counterMetricNameMap.Store(name, counterMetric)
 	} else {
-		counterMetric = counterMetricInterface.(*CounterMetric)
+		counterMetric, ok = counterMetricInterface.(*CounterMetric)
+		if !ok {
+			return nil, fmt.Errorf("cannot find metric by name %s", name)
+		}
 		//4. 如果之前注册过同名的metric，需要检测下新传进来的labelName和之前的一不一致，必须保持一致，不然会返回error
 		checkLabelNamesErr := checkLabelNames(counterMetric.name, counterMetric.labelName, labelName)
 		if checkLabelNamesErr != nil {
