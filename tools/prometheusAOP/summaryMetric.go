@@ -10,7 +10,6 @@ type SummaryMetric struct {
 	help        string
 	objectives  map[float64]float64
 	labelName   []string
-	labelValue  []string
 	summaryOpts prometheus.SummaryOpts
 	summaryVec  *prometheus.SummaryVec
 }
@@ -25,6 +24,7 @@ func (s *SummaryMetric) setAttributes(name, help string, objectives map[float64]
 		Help:       s.help,
 		Objectives: s.objectives,
 	}
+	s.summaryVec = prometheus.NewSummaryVec(s.summaryOpts, s.labelName)
 }
 
 func GetSummaryCollector(name, help string, objectives map[float64]float64, labelName []string) (*SummaryMetric, error) {
@@ -34,7 +34,6 @@ func GetSummaryCollector(name, help string, objectives map[float64]float64, labe
 	if !ok {
 		//2. 如果之前没注册过，生成一个新的，再注册到自定义Registry中
 		summaryMetric.setAttributes(name, help, objectives, labelName)
-		summaryMetric.summaryVec = prometheus.NewSummaryVec(summaryMetric.summaryOpts, summaryMetric.labelName)
 		registerErr := Registry.Register(summaryMetric.summaryVec)
 		if registerErr != nil {
 			return nil, registerErr
@@ -56,9 +55,8 @@ func GetSummaryCollector(name, help string, objectives map[float64]float64, labe
 }
 
 func (s *SummaryMetric) DoObserve(labelValue []string, metricValue float64) error {
-	s.labelValue = labelValue
 	//生成后续监控要用到的labelName和labelValue的映射
-	labels, generateLabelErr := generateLabels(s.labelName, s.labelValue)
+	labels, generateLabelErr := generateLabels(s.labelName, labelValue)
 	if generateLabelErr != nil {
 		return generateLabelErr
 	}
@@ -84,9 +82,8 @@ func GetSummaryTimer(name, help string, objective map[float64]float64, labelName
 }
 
 func (s *SummaryMetric) BuildTimer(labelValue []string) (*prometheus.Timer, error) {
-	s.labelValue = labelValue
 	//生成后续监控要用到的labelName和labelValue的映射
-	labels, generateLabelErr := generateLabels(s.labelName, s.labelValue)
+	labels, generateLabelErr := generateLabels(s.labelName, labelValue)
 	if generateLabelErr != nil {
 		return nil, generateLabelErr
 	}

@@ -9,7 +9,6 @@ type CounterMetric struct {
 	name        string
 	help        string
 	labelName   []string
-	labelValue  []string
 	counterOpts prometheus.CounterOpts
 	counterVec  *prometheus.CounterVec
 }
@@ -22,6 +21,7 @@ func (c *CounterMetric) setAttributes(name, help string, labelName []string) {
 		Name: c.name,
 		Help: c.help,
 	}
+	c.counterVec = prometheus.NewCounterVec(c.counterOpts, c.labelName)
 }
 
 func GetCounterCollector(name, help string, labelName []string) (*CounterMetric, error) {
@@ -31,7 +31,6 @@ func GetCounterCollector(name, help string, labelName []string) (*CounterMetric,
 	if !ok {
 		//2. 如果之前没注册过，生成一个新的，再注册到自定义Registry中
 		counterMetric.setAttributes(name, help, labelName)
-		counterMetric.counterVec = prometheus.NewCounterVec(counterMetric.counterOpts, counterMetric.labelName)
 		registerErr := Registry.Register(counterMetric.counterVec)
 		if registerErr != nil {
 			return nil, registerErr
@@ -53,9 +52,8 @@ func GetCounterCollector(name, help string, labelName []string) (*CounterMetric,
 }
 
 func (c *CounterMetric) DoObserve(labelValue []string, metricValue float64) error {
-	c.labelValue = labelValue
 	//生成后续监控要用到的labelName和labelValue的映射
-	labels, generateLabelErr := generateLabels(c.labelName, c.labelValue)
+	labels, generateLabelErr := generateLabels(c.labelName, labelValue)
 	if generateLabelErr != nil {
 		return generateLabelErr
 	}

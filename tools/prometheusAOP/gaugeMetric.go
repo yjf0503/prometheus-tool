@@ -7,23 +7,22 @@ import (
 )
 
 type GaugeMetric struct {
-	name       string
-	help       string
-	labelName  []string
-	labelValue []string
-	gaugeOpts  prometheus.GaugeOpts
-	gaugeVec   *prometheus.GaugeVec
+	name      string
+	help      string
+	labelName []string
+	gaugeOpts prometheus.GaugeOpts
+	gaugeVec  *prometheus.GaugeVec
 }
 
-func (g *GaugeMetric) setAttributes(name, help string, labelName, labelValue []string) {
+func (g *GaugeMetric) setAttributes(name, help string, labelName []string) {
 	g.name = name
 	g.help = help
 	g.labelName = labelName
-	g.labelValue = labelValue
 	g.gaugeOpts = prometheus.GaugeOpts{
 		Name: g.name,
 		Help: g.help,
 	}
+	g.gaugeVec = prometheus.NewGaugeVec(g.gaugeOpts, g.labelName)
 }
 
 func GetGaugeCollectorAndSetTimer(name, help string, labelName []string) (*GaugeMetric, time.Time) {
@@ -36,8 +35,7 @@ func GetGaugeCollector(name, help string, labelName []string) *GaugeMetric {
 	//1. 先查看之前有没有注册过同名的metric
 	if !ok {
 		//2. 如果之前没注册过，生成一个新的，再注册到自定义Registry中
-		gaugeMetric.setAttributes(name, help, labelName, []string{})
-		gaugeMetric.gaugeVec = prometheus.NewGaugeVec(gaugeMetric.gaugeOpts, gaugeMetric.labelName)
+		gaugeMetric.setAttributes(name, help, labelName)
 		registerErr := Registry.Register(gaugeMetric.gaugeVec)
 		if registerErr != nil {
 			fmt.Println(registerErr.Error())
@@ -80,9 +78,8 @@ func (g *GaugeMetric) DoObserveTimer(labelValue []string, timerStart time.Time) 
 }
 
 func (g *GaugeMetric) DoObserve(labelValue []string, metricValue float64) error {
-	g.labelValue = labelValue
 	//生成后续监控要用到的labelName和labelValue的映射
-	labels, generateLabelErr := generateLabels(g.labelName, g.labelValue)
+	labels, generateLabelErr := generateLabels(g.labelName, labelValue)
 	if generateLabelErr != nil {
 		return generateLabelErr
 	}

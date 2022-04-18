@@ -98,70 +98,142 @@ func doHistogramObserve(ctx context.Context, name, help string, buckets []float6
 }
 
 func TestTimerHistogramMetric(*testing.T) {
-	for {
-		metricName := "TracksByEntitySortedBySimilarity_request_duration"
-		metricHelp := "request histogram"
-		labelName := []string{"stage"}
+	go func() {
+		for {
+			metricName := "TracksByEntitySortedBySimilarity_request_duration"
+			metricHelp := "request histogram"
+			labelName := []string{"stage"}
 
-		//-------------------阶段0：全局请求时长-------------------
-		totalTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"total"})
-		if err != nil {
-			fmt.Println(err.Error())
-			return
+			//-------------------阶段0：全局请求时长-------------------
+			totalTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"total"})
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+
+			//-------------------阶段一：入参校验-------------------
+			validateTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"validate"})
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			//模拟程序执行时间
+			time.Sleep(time.Duration(rand.Intn(50)+100) * time.Millisecond)
+			validateTimer.ObserveDuration()
+
+			//---------------阶段二：获取entity对应的轨迹-------------------
+			fetchTrackListByEntityTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"fetchTrackListByEntity"})
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			//模拟程序执行时间
+			time.Sleep(time.Duration(rand.Intn(200)+200) * time.Millisecond)
+			fetchTrackListByEntityTimer.ObserveDuration()
+
+			//---------------阶段三：根据轨迹获取特征-------------------
+			batchGetFeaturesTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"batchGetFeatures"})
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			//模拟程序执行时间
+			time.Sleep(time.Duration(rand.Intn(200)+400) * time.Millisecond)
+			batchGetFeaturesTimer.ObserveDuration()
+
+			//---------------阶段四：对特征进行比较，获取特征相似度-------------------
+			batchCompareTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"batchCompare"})
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			//模拟程序执行时间
+			time.Sleep(time.Duration(rand.Intn(200)+200) * time.Millisecond)
+			batchCompareTimer.ObserveDuration()
+
+			//---------------阶段五：根据特征相似度对轨迹进行排序-------------------
+			reorderGetTopKTracksWithSimilarityTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"reorderGetTopKTracksWithSimilarity"})
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			//模拟程序执行时间
+			time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
+			reorderGetTopKTracksWithSimilarityTimer.ObserveDuration()
+
+			totalTimer.ObserveDuration()
+
+			time.Sleep(time.Duration(1) * time.Second)
 		}
+	}()
+	go func() {
+		for {
+			metricName := "TracksByEntitySortedBySimilarity_request_duration"
+			metricHelp := "request histogram"
+			labelName := []string{"stage"}
 
-		//-------------------阶段一：入参校验-------------------
-		validateTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"validate"})
-		if err != nil {
-			fmt.Println(err.Error())
-			return
+			//-------------------阶段0：全局请求时长-------------------
+			totalTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"total"})
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+
+			//-------------------阶段一：入参校验-------------------
+			validateTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"validate"})
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			//模拟程序执行时间
+			time.Sleep(time.Duration(rand.Intn(50)+100) * time.Millisecond)
+			validateTimer.ObserveDuration()
+
+			//---------------阶段二：获取entity对应的轨迹-------------------
+			fetchTrackListByEntityTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"fetchTrackListByEntity"})
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			//模拟程序执行时间
+			time.Sleep(time.Duration(rand.Intn(200)+200) * time.Millisecond)
+			fetchTrackListByEntityTimer.ObserveDuration()
+
+			//---------------阶段三：根据轨迹获取特征-------------------
+			batchGetFeaturesTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"batchGetFeatures"})
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			//模拟程序执行时间
+			time.Sleep(time.Duration(rand.Intn(200)+400) * time.Millisecond)
+			batchGetFeaturesTimer.ObserveDuration()
+
+			//---------------阶段四：对特征进行比较，获取特征相似度-------------------
+			batchCompareTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"batchCompare"})
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			//模拟程序执行时间
+			time.Sleep(time.Duration(rand.Intn(200)+200) * time.Millisecond)
+			batchCompareTimer.ObserveDuration()
+
+			//---------------阶段五：根据特征相似度对轨迹进行排序-------------------
+			reorderGetTopKTracksWithSimilarityTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"reorderGetTopKTracksWithSimilarity"})
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+			//模拟程序执行时间
+			time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
+			reorderGetTopKTracksWithSimilarityTimer.ObserveDuration()
+
+			totalTimer.ObserveDuration()
+
+			time.Sleep(time.Duration(1) * time.Second)
 		}
-		//模拟程序执行时间
-		time.Sleep(time.Duration(rand.Intn(50)+100) * time.Millisecond)
-		validateTimer.ObserveDuration()
+	}()
 
-		//---------------阶段二：获取entity对应的轨迹-------------------
-		fetchTrackListByEntityTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"fetchTrackListByEntity"})
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		//模拟程序执行时间
-		time.Sleep(time.Duration(rand.Intn(200)+200) * time.Millisecond)
-		fetchTrackListByEntityTimer.ObserveDuration()
-
-		//---------------阶段三：根据轨迹获取特征-------------------
-		batchGetFeaturesTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"batchGetFeatures"})
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		//模拟程序执行时间
-		time.Sleep(time.Duration(rand.Intn(200)+400) * time.Millisecond)
-		batchGetFeaturesTimer.ObserveDuration()
-
-		//---------------阶段四：对特征进行比较，获取特征相似度-------------------
-		batchCompareTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"batchCompare"})
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		//模拟程序执行时间
-		time.Sleep(time.Duration(rand.Intn(200)+200) * time.Millisecond)
-		batchCompareTimer.ObserveDuration()
-
-		//---------------阶段五：根据特征相似度对轨迹进行排序-------------------
-		reorderGetTopKTracksWithSimilarityTimer, err := prometheusAOP.GetHistogramTimer(metricName, metricHelp, requestTimeBucket, labelName, []string{"reorderGetTopKTracksWithSimilarity"})
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		//模拟程序执行时间
-		time.Sleep(time.Duration(rand.Intn(200)) * time.Millisecond)
-		reorderGetTopKTracksWithSimilarityTimer.ObserveDuration()
-
-		totalTimer.ObserveDuration()
-
-		time.Sleep(time.Duration(1) * time.Second)
-	}
+	select {}
 }

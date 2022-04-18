@@ -10,7 +10,6 @@ type HistogramMetric struct {
 	help          string
 	buckets       []float64
 	labelName     []string
-	labelValue    []string
 	histogramOpts prometheus.HistogramOpts
 	histogramVec  *prometheus.HistogramVec
 }
@@ -25,6 +24,7 @@ func (h *HistogramMetric) setAttributes(name, help string, buckets []float64, la
 		Help:    h.help,
 		Buckets: h.buckets,
 	}
+	h.histogramVec = prometheus.NewHistogramVec(h.histogramOpts, h.labelName)
 }
 
 func GetHistogramCollector(name, help string, buckets []float64, labelName []string) (*HistogramMetric, error) {
@@ -34,7 +34,6 @@ func GetHistogramCollector(name, help string, buckets []float64, labelName []str
 	if !ok {
 		//2. 如果之前没注册过，生成一个新的，再注册到自定义Registry中
 		histogramMetric.setAttributes(name, help, buckets, labelName)
-		histogramMetric.histogramVec = prometheus.NewHistogramVec(histogramMetric.histogramOpts, histogramMetric.labelName)
 		registerErr := Registry.Register(histogramMetric.histogramVec)
 		if registerErr != nil {
 			return nil, registerErr
@@ -56,9 +55,8 @@ func GetHistogramCollector(name, help string, buckets []float64, labelName []str
 }
 
 func (h *HistogramMetric) DoObserve(labelValue []string, metricValue float64) error {
-	h.labelValue = labelValue
 	//生成后续监控要用到的labelName和labelValue的映射
-	labels, generateLabelErr := generateLabels(h.labelName, h.labelValue)
+	labels, generateLabelErr := generateLabels(h.labelName, labelValue)
 	if generateLabelErr != nil {
 		return generateLabelErr
 	}
@@ -84,9 +82,8 @@ func GetHistogramTimer(name, help string, buckets []float64, labelName, labelVal
 }
 
 func (h *HistogramMetric) buildTimer(labelValue []string) (*prometheus.Timer, error) {
-	h.labelValue = labelValue
 	//生成后续监控要用到的labelName和labelValue的映射
-	labels, generateLabelErr := generateLabels(h.labelName, h.labelValue)
+	labels, generateLabelErr := generateLabels(h.labelName, labelValue)
 	if generateLabelErr != nil {
 		return nil, generateLabelErr
 	}
