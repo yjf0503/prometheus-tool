@@ -73,7 +73,7 @@ func GetSummaryTimer(name, help string, objective map[float64]float64, labelName
 		return nil, collectorErr
 	}
 
-	timer, buildTimerErr := summaryMetric.BuildTimer(labelValue)
+	timer, buildTimerErr := summaryMetric.buildTimer(labelValue)
 	if buildTimerErr != nil {
 		return nil, buildTimerErr
 	}
@@ -81,7 +81,7 @@ func GetSummaryTimer(name, help string, objective map[float64]float64, labelName
 	return timer, nil
 }
 
-func (s *SummaryMetric) BuildTimer(labelValue []string) (*prometheus.Timer, error) {
+func (s *SummaryMetric) buildTimer(labelValue []string) (*prometheus.Timer, error) {
 	//生成后续监控要用到的labelName和labelValue的映射
 	labels, generateLabelErr := generateLabels(s.labelName, labelValue)
 	if generateLabelErr != nil {
